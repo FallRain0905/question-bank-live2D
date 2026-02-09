@@ -3,10 +3,10 @@ import { getSupabase } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // 使用 service_role 获取用户信息（需要管理员权限）
     const supabase = getSupabase();

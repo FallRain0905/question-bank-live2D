@@ -87,8 +87,8 @@ export default function MePage() {
         .eq('id', user.id);
 
       // 重新获取用户信息
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { data: { user: updatedUser } } = await supabase.auth.getUser();
+      setUser(updatedUser);
       await loadUserProfile();
       setEditingUsername(false);
       alert('用户名更新成功！');

@@ -482,9 +482,9 @@ export default function NoteDetailPage() {
           {/* 文件下载 */}
           {note.file_url && (
             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg mb-4">
-              <div className="text-2xl">{getFileIcon(note.file_name)}</div>
+              <div className="text-2xl">{getFileIcon(note.file_name || '')}</div>
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{note.file_name}</p>
+                <p className="font-medium text-gray-900">{note.file_name || '文件'}</p>
                 {note.file_size && (
                   <p className="text-sm text-gray-500">{formatFileSize(note.file_size)}</p>
                 )}
@@ -528,7 +528,6 @@ export default function NoteDetailPage() {
                 {isFollowing ? '已关注' : '关注'}
               </button>
             </div>
-          </div>
           </div>
         </div>
 
