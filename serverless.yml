@@ -1,0 +1,22 @@
+component: nextjs
+name: question-bank
+
+inputs:
+  src:
+    src: ./
+    exclude:
+      - .env.local
+      - .env*.local
+      - .next
+      - node_modules
+  functionName: question-bank-nextjs
+  region: ap-guangzhou
+  runtime: Nodejs18.17
+  apigatewayConf:
+    protocols:
+      - http
+      - https
+    environment: release
+  env:
+    NEXT_PUBLIC_SUPABASE_URL: https://uuyjvdqtvfozwlsqvayp.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1eWp2ZHF0dmZvendsc3F2YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMzc1MDAsImV4cCI6MjA4MzcxMzUwMH0.j2nxa8pNcBvuOSBu7fYoxz5ydZFJ9pmC9oqn_IvZB78
