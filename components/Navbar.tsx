@@ -9,6 +9,7 @@ export default function Navbar() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isClassModerator, setIsClassModerator] = useState(false);
 
   useEffect(() => {
     // 获取当前用户
@@ -22,6 +23,7 @@ export default function Navbar() {
           is_admin: user.user_metadata?.is_admin === true
         });
         loadUnreadCount(user.id);
+        await checkClassModerator(user.id);
       }
     };
 
@@ -29,7 +31,7 @@ export default function Navbar() {
 
     // 监听登录状态变化
     const { data: { subscription } } = getSupabase().auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (session?.user) {
           setUser({
             id: session.user.id,
@@ -38,15 +40,34 @@ export default function Navbar() {
             is_admin: session.user.user_metadata?.is_admin === true
           });
           loadUnreadCount(session.user.id);
+          await checkClassModerator(session.user.id);
         } else {
           setUser(null);
           setUnreadCount(0);
+          setIsClassModerator(false);
         }
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkClassModerator = async (userId: string) => {
+    const supabase = getSupabase();
+    try {
+      const { data: classMembers } = await supabase
+        .from('class_members')
+        .select('role')
+        .eq('user_id', userId)
+        .in('role', ['creator', 'moderator'])
+        .limit(1);
+
+      setIsClassModerator(!!classMembers && classMembers.length > 0);
+    } catch (err) {
+      // 表可能不存在，忽略
+      setIsClassModerator(false);
+    }
+  };
 
   const loadUnreadCount = async (userId: string) => {
     const supabase = getSupabase();
@@ -59,7 +80,11 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    await getSupabase().auth.signOut();
+    const { error } = await getSupabase().auth.signOut();
+    if (!error) {
+      // 使用 window.location.href 强制页面刷新，确保清除所有状态
+      window.location.href = '/';
+    }
   };
 
   const getDisplayName = () => {
@@ -85,6 +110,12 @@ export default function Navbar() {
             <Link href="/notes" className="text-gray-600 hover:text-blue-600 transition">
               笔记
             </Link>
+            <Link href="/social" className="text-gray-600 hover:text-blue-600 transition">
+              学习圈
+            </Link>
+            <Link href="/classes" className="text-gray-600 hover:text-blue-600 transition">
+              班级
+            </Link>
             {user && (
               <>
                 <Link href="/upload" className="text-gray-600 hover:text-blue-600 transition">
@@ -93,7 +124,7 @@ export default function Navbar() {
                 <Link href="/notes/upload" className="text-gray-600 hover:text-blue-600 transition">
                   上传笔记
                 </Link>
-                {user.is_admin && (
+                {(user.is_admin || isClassModerator) && (
                   <Link href="/admin" className="text-gray-600 hover:text-blue-600 transition">
                     审核
                   </Link>

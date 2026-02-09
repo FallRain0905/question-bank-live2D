@@ -33,36 +33,67 @@ export default function NotesPage() {
   const loadData = async () => {
     setLoading(true);
 
-    const { data: { user } } = await getSupabase().auth.getUser();
-    if (user) {
+    try {
+      const { data: { user } } = await getSupabase().auth.getUser();
+
+      // 未登录用户直接返回空列表
+      if (!user) {
+        setNotes([]);
+        setAvailableTags([]);
+        setLoading(false);
+        return;
+      }
+
       setCurrentUserId(user.id);
-    }
 
-    const supabase = getSupabase();
-    const { data: notesData, error } = await supabase
-      .from('notes')
-      .select(`
-        *,
-        tags (
-          id,
-          name
-        )
-      `)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false });
+      const supabase = getSupabase();
 
-    if (error) {
-      console.error('获取笔记失败:', error);
-    } else {
-      const formattedNotes = (notesData || []).map((n: any) => ({
-        ...n,
-        tags: n.tags || [],
-        user_name: '用户',
-      }));
-      setNotes(formattedNotes);
-    }
+      // 获取用户加入的班级ID列表
+      let userClassIds: string[] = [];
+      try {
+        const { data: classMembers } = await supabase
+          .from('class_members')
+          .select('class_id')
+          .eq('user_id', user.id);
+        userClassIds = classMembers?.map((c: any) => c.class_id) || [];
+      } catch (err) {
+        // 表可能还不存在，忽略
+        console.log('class_members 表可能不存在');
+      }
 
-    if (user) {
+      // 如果用户没有班级，返回空列表
+      if (userClassIds.length === 0) {
+        setNotes([]);
+        setAvailableTags([]);
+        setLoading(false);
+        return;
+      }
+
+      // 构建查询：只显示用户班级中的笔记
+      const { data: notesData, error } = await supabase
+        .from('notes')
+        .select(`
+          *,
+          tags (
+            id,
+            name
+          )
+        `)
+        .eq('status', 'approved')
+        .in('class_id', userClassIds)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('获取笔记失败:', error);
+      } else {
+        const formattedNotes = (notesData || []).map((n: any) => ({
+          ...n,
+          tags: n.tags || [],
+          user_name: '用户',
+        }));
+        setNotes(formattedNotes);
+      }
+
       const { data: likesData } = await supabase
         .from('likes')
         .select('note_id')
@@ -71,12 +102,16 @@ export default function NotesPage() {
       if (likesData) {
         setLikedNoteIds(new Set(likesData.map(l => l.note_id)));
       }
+
+      const allTags = await getAllTags();
+      setAvailableTags(allTags);
+    } catch (err) {
+      console.error('加载数据失败:', err);
+      setNotes([]);
+      setAvailableTags([]);
+    } finally {
+      setLoading(false);
     }
-
-    const allTags = await getAllTags();
-    setAvailableTags(allTags);
-
-    setLoading(false);
   };
 
   const loadSearchHistory = async () => {
@@ -354,7 +389,13 @@ export default function NotesPage() {
         ) : filteredNotes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">
-              {notes.length === 0 ? '还没有笔记，去上传第一篇吧！' : '没有找到匹配的笔记'}
+              {currentUserId ? (
+                notes.length === 0 ? '还没有笔记，去上传第一篇吧！' : '没有找到匹配的笔记'
+              ) : (
+                <>
+                  请先 <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">登录</Link> 后查看笔记
+                </>
+              )}
             </p>
           </div>
         ) : (

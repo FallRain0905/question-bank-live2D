@@ -1,24 +1,21 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
 import { uploadFile, isValidFileType, isValidFileSize, formatFileSize, MAX_FILE_SIZE } from '@/lib/upload';
 import TagInput from '@/components/TagInput';
-import type { NewNote } from '@/types';
+import type { ClassWithRole } from '@/types';
 
 // 使用 MIME 类型 + 扩展名，确保移动端兼容性
 const ACCEPTED_FILE_EXTENSIONS = [
-  // 图片 MIME 类型
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-  // 文档 MIME 类型
   'application/pdf',
   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/plain',
   'application/zip', 'application/x-rar-compressed',
-  // 同时保留扩展名作为后备
   '.jpg', '.jpeg', '.png', '.gif', '.webp',
   '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt',
   '.zip', '.rar'
@@ -35,6 +32,48 @@ export default function NoteUploadPage() {
   const [error, setError] = useState('');
   const [fileError, setFileError] = useState('');
 
+  // 班级选择
+  const [classes, setClasses] = useState<ClassWithRole[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    setUser(user);
+
+    // 获取用户的班级
+    try {
+      const { data: classesData } = await supabase
+        .from('class_members')
+        .select(`
+          class_id,
+          role,
+          classes (
+            id,
+            name
+          )
+        `)
+        .eq('user_id', user.id);
+
+      setClasses(classesData?.map((c: any) => ({
+        ...c.classes,
+        userRole: c.role,
+      })) || []);
+    } catch (err) {
+      console.error('获取班级失败:', err);
+      setClasses([]);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     setFileError('');
@@ -44,14 +83,12 @@ export default function NoteUploadPage() {
       return;
     }
 
-    // 验证文件类型
     if (!isValidFileType(selectedFile)) {
       setFileError('不支持的文件类型，请上传图片、PDF、Word、PPT 或 Excel 文件');
       setFile(null);
       return;
     }
 
-    // 验证文件大小
     if (!isValidFileSize(selectedFile)) {
       setFileError(`文件大小不能超过 ${formatFileSize(MAX_FILE_SIZE)}`);
       setFile(null);
@@ -66,21 +103,23 @@ export default function NoteUploadPage() {
     setError('');
     setFileError('');
 
-    // 验证：标题必填
     if (!title.trim()) {
       setError('请输入标题');
       return;
     }
 
-    // 验证：文件必填
     if (!file) {
       setFileError('请选择要上传的文件');
       return;
     }
 
-    // 验证：标签必填
     if (tags.length === 0) {
       setError('请至少添加一个标签');
+      return;
+    }
+
+    if (!selectedClassId) {
+      setError('请选择一个班级');
       return;
     }
 
@@ -88,26 +127,13 @@ export default function NoteUploadPage() {
 
     try {
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/login');
-        return;
-      }
 
       // 上传文件
-      let fileUrl: string | null = null;
-      let fileName: string | null = null;
-      let fileType: string | null = null;
-      let fileSize: number | null = null;
-
-      if (file) {
-        const uploadResult = await uploadFile(file, 'files', 'notes');
-        fileUrl = uploadResult.url;
-        fileName = file.name;
-        fileType = file.type || getFileMimeType(file.name);
-        fileSize = file.size;
-      }
+      const uploadResult = await uploadFile(file, 'files', 'notes');
+      const fileUrl = uploadResult.url;
+      const fileName = file.name;
+      const fileType = file.type;
+      const fileSize = file.size;
 
       // 插入笔记记录
       const { data: noteData, error: insertError } = await supabase
@@ -121,19 +147,17 @@ export default function NoteUploadPage() {
           file_type: fileType,
           file_size: fileSize,
           status: 'pending',
+          class_id: selectedClassId,
         })
         .select('id')
         .single();
 
-      if (insertError) {
-        throw insertError;
-      }
+      if (insertError) throw insertError;
 
       const noteId = noteData.id;
 
-      // 处理标签 - 查找或创建标签并关联
+      // 处理标签
       for (const tagName of tags) {
-        // 查找或创建标签
         let tagId;
         const { data: existingTag } = await supabase
           .from('tags')
@@ -152,7 +176,6 @@ export default function NoteUploadPage() {
           tagId = newTag?.id;
         }
 
-        // 关联标签到笔记
         if (tagId && noteId) {
           await supabase
             .from('note_tags')
@@ -160,16 +183,15 @@ export default function NoteUploadPage() {
         }
       }
 
-      alert('笔记上传成功！等待管理员审核后即可在笔记库中查看。');
+      alert('笔记上传成功！等待管理员或班级审核员审核后即可在笔记库中查看。');
 
       // 重置表单
       setTitle('');
       setDescription('');
       setTags([]);
       setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setSelectedClassId('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
 
     } catch (err: any) {
       console.error('上传失败:', err);
@@ -178,19 +200,6 @@ export default function NoteUploadPage() {
       setUploading(false);
     }
   };
-
-  function getFileMimeType(fileName: string): string {
-    const ext = fileName.toLowerCase().split('.').pop();
-    const mimeMap: Record<string, string> = {
-      'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
-      'gif': 'image/gif', 'webp': 'image/webp', 'pdf': 'application/pdf',
-      'doc': 'application/msword', 'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'ppt': 'application/vnd.ms-powerpoint', 'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'xls': 'application/vnd.ms-excel', 'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'txt': 'text/plain', 'zip': 'application/zip', 'rar': 'application/x-rar-compressed',
-    };
-    return mimeMap[ext || ''] || 'application/octet-stream';
-  }
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50">
@@ -206,6 +215,32 @@ export default function NoteUploadPage() {
               {error}
             </div>
           )}
+
+          {/* 班级选择 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              选择班级 <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              disabled={uploading}
+            >
+              <option value="">请选择班级</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                  {cls.userRole === 'creator' && ' (管理员)'}
+                </option>
+              ))}
+            </select>
+            {classes.length === 0 && (
+              <p className="mt-1 text-sm text-gray-500">
+                还没有加入班级，请先 <a href="/classes" className="text-blue-600 hover:text-blue-700">创建或加入班级</a>
+              </p>
+            )}
+          </div>
 
           {/* 标题 */}
           <div>
@@ -308,7 +343,7 @@ export default function NoteUploadPage() {
           <div className="pt-4">
             <button
               type="submit"
-              disabled={uploading}
+              disabled={uploading || !selectedClassId}
               className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {uploading ? '上传中...' : '上传笔记'}
@@ -319,8 +354,8 @@ export default function NoteUploadPage() {
         {/* 提示信息 */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-700">
-            <strong>提示：</strong>上传的笔记需要经过管理员审核后才能在笔记库中显示。
-            支持的文件格式包括：图片（JPG、PNG、GIF）、PDF、Word、PPT、Excel 等。
+            <strong>提示：</strong>上传的笔记需要经过管理员或班级审核员审核后才能在笔记库中显示。
+            只有同一班级的成员才能看到彼此上传的内容。
           </p>
         </div>
       </div>

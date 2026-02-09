@@ -53,6 +53,21 @@ export default function NoteDetailPage() {
   const loadNote = async () => {
     const supabase = getSupabase();
 
+    // 获取用户加入的班级ID列表
+    let userClassIds: string[] = [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      try {
+        const { data: classMembers } = await supabase
+          .from('class_members')
+          .select('class_id')
+          .eq('user_id', user.id);
+        userClassIds = classMembers?.map((c: any) => c.class_id) || [];
+      } catch (err) {
+        console.log('class_members 表可能不存在');
+      }
+    }
+
     const { data, error } = await supabase
       .from('notes')
       .select(`
@@ -73,6 +88,13 @@ export default function NoteDetailPage() {
     }
 
     if (data) {
+      // 检查班级权限：如果笔记有班级，用户必须是该班级成员
+      if (data.class_id && (!userClassIds.length || !userClassIds.includes(data.class_id))) {
+        console.error('无权访问该笔记');
+        router.push('/notes');
+        return;
+      }
+
       // 获取上传者用户信息
       const { data: profileData } = await supabase
         .from('user_profiles')

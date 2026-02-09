@@ -23,6 +23,14 @@ let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 
 export function getSupabase() {
   if (!supabaseInstance) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+      console.error('Supabase 环境变量未设置');
+      throw new Error('Supabase 配置缺失');
+    }
+
     supabaseInstance = createSupabaseClient();
   }
   return supabaseInstance;

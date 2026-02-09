@@ -13,24 +13,30 @@ export default function Home() {
   }, []);
 
   const loadStats = async () => {
-    const supabase = getSupabase();
-    const { count: questionsCount } = await supabase
-      .from('questions')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved');
-    const { count: notesCount } = await supabase
-      .from('notes')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved');
-    const { count: usersCount } = await supabase
-      .from('user_profiles')
-      .select('*', { count: 'exact', head: true });
-    setStats({
-      questions: questionsCount || 0,
-      notes: notesCount || 0,
-      users: usersCount || 0,
-    });
-    setLoading(false);
+    try {
+      const supabase = getSupabase();
+      const { count: questionsCount } = await supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved');
+      const { count: notesCount } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved');
+      const { count: usersCount } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true });
+      setStats({
+        questions: questionsCount || 0,
+        notes: notesCount || 0,
+        users: usersCount || 0,
+      });
+    } catch (err) {
+      console.error('加载统计数据失败:', err);
+      setStats({ questions: 0, notes: 0, users: 0 });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabase } from '@/lib/supabase';
@@ -13,64 +13,100 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [supabaseReady, setSupabaseReady] = useState(false);
+
+  useEffect(() => {
+    // 检查 Supabase 是否可用
+    try {
+      getSupabase();
+      setSupabaseReady(true);
+    } catch (err) {
+      console.error('Supabase 初始化失败:', err);
+      setError('系统初始化失败，请刷新页面重试');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!supabaseReady) {
+      setError('系统初始化中，请稍后...');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     const supabase = getSupabase();
 
-    if (isSignUp) {
-      // 注册
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username.trim(),
-            display_name: username.trim(),
+    try {
+      if (isSignUp) {
+        // 注册
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username: username.trim(),
+              display_name: username.trim(),
+            }
           }
-        }
-      });
-
-      if (error) {
-        setError(error.message);
-      } else if (data.user) {
-        // 创建用户公开信息记录
-        await supabase.from('user_profiles').insert({
-          id: data.user.id,
-          username: username.trim(),
-          display_name: username.trim(),
         });
-        // 注册成功，提示用户检查邮箱（如果是邮箱验证模式）
-        // 或者直接登录
-        setError('注册成功！请登录。');
-        setIsSignUp(false);
-        setUsername('');
-      }
-    } else {
-      // 登录
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
 
-      if (error) {
-        setError(error.message);
+        if (error) {
+          setError(error.message);
+        } else if (data.user) {
+          // 创建用户公开信息记录
+          try {
+            await supabase.from('user_profiles').insert({
+              id: data.user.id,
+              username: username.trim(),
+              display_name: username.trim(),
+            });
+          } catch (err) {
+            console.log('创建用户资料失败:', err);
+          }
+
+          setError('注册成功！请登录。');
+          setIsSignUp(false);
+          setUsername('');
+        } else {
+          setError('注册失败，请重试');
+        }
       } else {
-        router.push('/');
-        router.refresh();
-      }
-    }
+        // 登录
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-    setLoading(false);
+        if (error) {
+          setError(error.message);
+        } else if (data.session) {
+          // 登录成功
+          router.push('/');
+          router.refresh();
+        } else {
+          setError('登录失败，请重试');
+        }
+      }
+    } catch (err: any) {
+      console.error('登录/注册失败:', err);
+      setError(err?.message || '操作失败，请重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+        {!supabaseReady ? (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">正在初始化...</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
             {isSignUp ? '注册账号' : '登录'}
           </h1>
@@ -160,6 +196,7 @@ export default function LoginPage() {
             </Link>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -12,6 +12,10 @@ type ItemStatus = 'pending' | 'approved' | 'rejected';
 export default function AdminPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isClassModerator, setIsClassModerator] = useState(false);
+  const [userClassIds, setUserClassIds] = useState<string[]>([]);
+  const [userClasses, setUserClasses] = useState<any[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [contentType, setContentType] = useState<ContentType>('questions');
   const [questions, setQuestions] = useState<QuestionWithTags[]>([]);
@@ -19,28 +23,68 @@ export default function AdminPage() {
   const [filterStatus, setFilterStatus] = useState<ItemStatus>('pending');
 
   useEffect(() => {
-    checkAdmin();
+    checkPermission();
   }, []);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin || isClassModerator) {
       loadData();
     }
-  }, [isAdmin, contentType, filterStatus]);
+  }, [isAdmin, isClassModerator, contentType, filterStatus, selectedClassId]);
 
-  const checkAdmin = async () => {
+  const checkPermission = async () => {
     const { data: { user } } = await getSupabase().auth.getUser();
     if (!user) {
       router.push('/login');
       return;
     }
 
-    if (user.user_metadata?.is_admin !== true) {
+    // 检查是否是管理员
+    if (user.user_metadata?.is_admin === true) {
+      setIsAdmin(true);
+      setLoading(false);
+      return;
+    }
+
+    // 检查是否是班级创建者或审核员
+    const supabase = getSupabase();
+    try {
+      const { data: classMembers } = await supabase
+        .from('class_members')
+        .select(`
+          class_id,
+          role,
+          classes (
+            id,
+            name
+          )
+        `)
+        .eq('user_id', user.id)
+        .in('role', ['creator', 'moderator']);
+
+      if (classMembers && classMembers.length > 0) {
+        setIsClassModerator(true);
+        const classIds = classMembers.map((c: any) => c.class_id);
+        setUserClassIds(classIds);
+        setUserClasses(classMembers.map((c: any) => ({
+          id: c.classes.id,
+          name: c.classes.name,
+          role: c.role
+        })));
+        if (classIds.length > 0) {
+          setSelectedClassId(classIds[0]);
+        }
+      } else {
+        router.push('/');
+        return;
+      }
+    } catch (err) {
+      console.error('检查班级权限失败:', err);
       router.push('/');
       return;
     }
 
-    setIsAdmin(true);
+    setLoading(false);
   };
 
   const loadData = async () => {
@@ -48,7 +92,7 @@ export default function AdminPage() {
     const supabase = getSupabase();
 
     if (contentType === 'questions') {
-      const { data: questionsData, error } = await supabase
+      let query = supabase
         .from('questions')
         .select(`
           *,
@@ -57,8 +101,14 @@ export default function AdminPage() {
             name
           )
         `)
-        .eq('status', filterStatus)
-        .order('created_at', { ascending: false });
+        .eq('status', filterStatus);
+
+      // 班级审核员只能看到本班级的内容
+      if (isClassModerator && selectedClassId) {
+        query = query.eq('class_id', selectedClassId);
+      }
+
+      const { data: questionsData, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('获取题目失败:', error);
@@ -69,7 +119,7 @@ export default function AdminPage() {
         })));
       }
     } else {
-      const { data: notesData, error } = await supabase
+      let query = supabase
         .from('notes')
         .select(`
           *,
@@ -78,8 +128,14 @@ export default function AdminPage() {
             name
           )
         `)
-        .eq('status', filterStatus)
-        .order('created_at', { ascending: false });
+        .eq('status', filterStatus);
+
+      // 班级审核员只能看到本班级的内容
+      if (isClassModerator && selectedClassId) {
+        query = query.eq('class_id', selectedClassId);
+      }
+
+      const { data: notesData, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('获取笔记失败:', error);
@@ -204,7 +260,7 @@ export default function AdminPage() {
     }
   };
 
-  if (!isAdmin) {
+  if (!isAdmin && !isClassModerator) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
         <div className="text-gray-500">加载中...</div>
@@ -227,7 +283,9 @@ export default function AdminPage() {
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">审核管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isAdmin ? '审核管理' : '班级审核'}
+            </h1>
             <button
               onClick={loadData}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
@@ -235,6 +293,26 @@ export default function AdminPage() {
               刷新
             </button>
           </div>
+
+          {/* 班级选择器 - 仅班级审核员显示 */}
+          {isClassModerator && userClasses.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                选择班级
+              </label>
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              >
+                {userClasses.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name} {cls.role === 'creator' ? '(管理员)' : '(审核员)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* 内容类型切换 */}
           <div className="flex gap-2 mb-4">

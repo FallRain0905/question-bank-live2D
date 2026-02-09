@@ -141,3 +141,26 @@ export interface SearchHistory {
   query: string;
   created_at: string;
 }
+
+// 班级相关类型
+export interface Class {
+  id: string;
+  name: string;
+  description: string | null;
+  invite_code: string;
+  creator_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClassMember {
+  id: string;
+  class_id: string;
+  user_id: string;
+  role: 'creator' | 'moderator' | 'member';
+  joined_at: string;
+}
+
+export interface ClassWithRole extends Class {
+  userRole?: 'creator' | 'moderator' | 'member';
+}
