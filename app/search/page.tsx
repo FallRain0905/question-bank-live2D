@@ -63,15 +63,7 @@ export default function SearchPage() {
         console.log('class_members 表可能不存在');
       }
 
-      // 如果用户没有班级，返回空列表
-      if (userClassIds.length === 0) {
-        setQuestions([]);
-        setAvailableTags([]);
-        setLoading(false);
-        return;
-      }
-
-      // 构建查询：只显示用户班级中的题目
+      // 管理员可以查看所有题目，普通用户只能查看自己班级的题目
       const { data: questionsData, error } = await supabase
         .from('questions')
         .select(`
@@ -82,8 +74,18 @@ export default function SearchPage() {
           )
         `)
         .eq('status', 'approved')
-        .in('class_id', userClassIds)
         .order('created_at', { ascending: false });
+
+      // 过滤：管理员看全部，普通用户只看自己班级的
+      let filteredQuestions = questionsData || [];
+      if (!isAdmin && userClassIds.length > 0) {
+        filteredQuestions = filteredQuestions.filter((q: any) =>
+          userClassIds.includes(q.class_id)
+        );
+      } else if (!isAdmin && userClassIds.length === 0) {
+        // 非管理员且没有班级，返回空列表
+        filteredQuestions = [];
+      }
 
       if (error) {
         console.error('获取题目失败:', error);

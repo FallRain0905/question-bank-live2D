@@ -27,6 +27,7 @@ export default function NoteUploadPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -37,8 +38,15 @@ export default function NoteUploadPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [user, setUser] = useState<any>(null);
 
+  // 使用 ref 防止组件卸载后更新状态
+  const isMounted = useRef(true);
+
   useEffect(() => {
+    isMounted.current = true;
     checkUser();
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const checkUser = async () => {
@@ -48,7 +56,19 @@ export default function NoteUploadPage() {
       router.push('/login');
       return;
     }
+    if (!isMounted.current) return;
+
     setUser(user);
+
+    // 获取所有标签
+    try {
+      const { data: tagsData } = await supabase.from('tags').select('name');
+      if (isMounted.current) {
+        setAvailableTags(tagsData?.map((t: any) => t.name) || []);
+      }
+    } catch (err) {
+      console.error('获取标签失败:', err);
+    }
 
     // 获取用户的班级
     try {
@@ -64,13 +84,17 @@ export default function NoteUploadPage() {
         `)
         .eq('user_id', user.id);
 
-      setClasses(classesData?.map((c: any) => ({
-        ...c.classes,
-        userRole: c.role,
-      })) || []);
+      if (isMounted.current) {
+        setClasses(classesData?.map((c: any) => ({
+          ...c.classes,
+          userRole: c.role,
+        })) || []);
+      }
     } catch (err) {
       console.error('获取班级失败:', err);
-      setClasses([]);
+      if (isMounted.current) {
+        setClasses([]);
+      }
     }
   };
 
@@ -210,6 +234,13 @@ export default function NoteUploadPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+          {/* 提醒信息 */}
+          <div className="bg-yellow-50 border border-yellow-200 px-4 py-3 rounded-lg mb-4">
+            <p className="text-sm text-yellow-700">
+              ⚠️ <strong>请遵守社区规范：</strong>禁止上传违法违规、色情暴力、广告刷屏等内容。所有内容需经审核后显示，违规账号将被封禁。
+            </p>
+          </div>
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
               {error}
@@ -335,6 +366,7 @@ export default function NoteUploadPage() {
             <TagInput
               tags={tags}
               onChange={setTags}
+              availableTags={availableTags}
               placeholder="添加标签（如：高等数学、力学、复习笔记）"
             />
           </div>

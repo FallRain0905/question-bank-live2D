@@ -1,15 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase';
 
 // POST - 通过邀请码加入班级
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = createSupabaseServerClient();
+
+    // 从请求头获取用户信息（用于服务端 API）
+    const authHeader = request.headers.get('authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+
+    let user = null;
+    if (token) {
+      // 验证 token 并获取用户信息
+      const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
+      if (!error && authUser) {
+        user = authUser;
+      }
+    }
 
     if (!user) {
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
+
+    // 创建一个带认证上下文的客户端用于 RLS 操作
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
 
     const body = await request.json();
     const { inviteCode } = body;
@@ -19,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 查找班级
-    const { data: classData, error: classError } = await supabase
+    const { data: classData, error: classError } = await authSupabase
       .from('classes')
       .select('*')
       .eq('invite_code', inviteCode.trim().toUpperCase())
@@ -30,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查是否已经是班级成员
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await authSupabase
       .from('class_members')
       .select('*')
       .eq('class_id', classData.id)
@@ -42,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 加入班级
-    const { error: joinError } = await supabase
+    const { error: joinError } = await authSupabase
       .from('class_members')
       .insert({
         class_id: classData.id,

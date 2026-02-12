@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getUserProfiles } from '@/lib/supabase';
 import { uploadImage } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -91,11 +91,7 @@ export default function SocialPage() {
       let profileMap = new Map();
       if (userIds.length > 0) {
         try {
-          const { data: profiles } = await supabase
-            .from('user_profiles')
-            .select('id, username, display_name, avatar_url')
-            .in('id', userIds);
-          profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+          profileMap = await getUserProfiles(userIds);
         } catch (err) {
           console.log('获取用户信息失败');
         }
@@ -118,9 +114,10 @@ export default function SocialPage() {
       // 组合数据
       const formattedPosts = (postsData || []).map((post: any) => {
         const profile = profileMap.get(post.user_id);
+        const displayName = profile?.username || profile?.display_name || '用户';
         return {
           ...post,
-          user_name: profile?.username || profile?.display_name || '用户',
+          user_name: displayName,
           user_avatar: profile?.avatar_url,
           is_liked: likedPostIds.has(post.id),
         } as Post;
@@ -148,19 +145,16 @@ export default function SocialPage() {
 
       // 获取评论用户信息
       const userIds = [...new Set(data?.map(c => c.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('id, username, display_name')
-        .in('id', userIds);
+      const profileMap = await getUserProfiles(userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-      const formattedComments = (data || []).map((comment: any) => ({
-        ...comment,
-        user_name: profileMap.get(comment.user_id)?.username ||
-                  profileMap.get(comment.user_id)?.display_name ||
-                  '用户',
-      }));
+      const formattedComments = (data || []).map((comment: any) => {
+        const profile = profileMap.get(comment.user_id);
+        const displayName = profile?.username || profile?.display_name || '用户';
+        return {
+          ...comment,
+          user_name: displayName,
+        };
+      });
 
       setComments(prev => new Map(prev).set(postId, formattedComments));
     } catch (err) {

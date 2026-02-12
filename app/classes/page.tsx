@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getSupabase } from '@/lib/supabase';
+import { useState, useEffect, useRef } from 'react';
+import { getSupabase, getUserProfiles } from '@/lib/supabase';
 import type { ClassWithRole } from '@/types';
 
 interface ClassMember {
@@ -17,6 +17,9 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState<ClassWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
+  // 使用 ref 防止组件卸载后更新状态
+  const isMounted = useRef(true);
 
   // 创建班级表单
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -37,9 +40,15 @@ export default function ClassesPage() {
   const [loadingMembers, setLoadingMembers] = useState(false);
 
   useEffect(() => {
+    isMounted.current = true;
     checkUser();
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
+  // 只有当 user 存在时才加载班级列表
   useEffect(() => {
     if (user) {
       loadClasses();
@@ -48,9 +57,11 @@ export default function ClassesPage() {
 
   const checkUser = async () => {
     const { data: { user } } = await getSupabase().auth.getUser();
-    setUser(user);
-    if (!user) {
-      setLoading(false);
+    if (isMounted.current) {
+      setUser(user);
+      if (!user) {
+        setLoading(false);
+      }
     }
   };
 
@@ -95,40 +106,53 @@ export default function ClassesPage() {
     setLoadingMembers(true);
     try {
       const supabase = getSupabase();
-      const { data, error } = await supabase
+      // 获取班级成员
+      const { data: members, error } = await supabase
         .from('class_members')
-        .select(`
-          id,
-          user_id,
-          role,
-          joined_at,
-          user_profiles (
-            id,
-            username,
-            display_name
-          )
-        `)
+        .select('*')
         .eq('class_id', classId)
         .order('joined_at', { ascending: true });
 
       if (error) {
         console.error('获取成员列表失败:', error);
         setMembers([]);
-      } else {
-        setMembers(data?.map((m: any) => ({
-          id: m.id,
-          user_id: m.user_id,
-          role: m.role,
-          joined_at: m.joined_at,
-          username: m.user_profiles?.username || m.user_profiles?.display_name || '用户',
-          display_name: m.user_profiles?.display_name || m.user_profiles?.username || '用户',
-        })) || []);
+        return;
+      }
+
+      if (!members || members.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // 获取所有用户 ID
+      const userIds = members.map(m => m.user_id);
+
+      // 使用工具函数批量获取用户信息
+      const profileMap = await getUserProfiles(userIds);
+
+      if (isMounted.current) {
+        setMembers(members.map((m: any) => {
+          const profile = profileMap.get(m.user_id);
+          const displayName = profile?.username || profile?.display_name || '用户';
+          return {
+            id: m.id,
+            user_id: m.user_id,
+            role: m.role,
+            joined_at: m.joined_at,
+            username: displayName,
+            display_name: displayName,
+          };
+        }));
       }
     } catch (err) {
       console.error('加载成员时出错:', err);
-      setMembers([]);
+      if (isMounted.current) {
+        setMembers([]);
+      }
     } finally {
-      setLoadingMembers(false);
+      if (isMounted.current) {
+        setLoadingMembers(false);
+      }
     }
   };
 
@@ -178,9 +202,14 @@ export default function ClassesPage() {
     setJoining(true);
     try {
       const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
       const response = await fetch('/api/classes/join', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.user && { Authorization: `Bearer ${session.access_token}` }),
+        },
         body: JSON.stringify({ inviteCode: inviteCode.trim() }),
       });
 
@@ -209,9 +238,14 @@ export default function ClassesPage() {
 
     try {
       const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+
       const response = await fetch('/api/classes/leave', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.user && { Authorization: `Bearer ${session.access_token}` }),
+        },
         body: JSON.stringify({ classId }),
       });
 

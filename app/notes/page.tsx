@@ -16,6 +16,7 @@ export default function NotesPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [likedNoteIds, setLikedNoteIds] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
@@ -45,6 +46,7 @@ export default function NotesPage() {
       }
 
       setCurrentUserId(user.id);
+      setIsAdmin(user.user_metadata?.is_admin === true);
 
       const supabase = getSupabase();
 
@@ -61,15 +63,7 @@ export default function NotesPage() {
         console.log('class_members 表可能不存在');
       }
 
-      // 如果用户没有班级，返回空列表
-      if (userClassIds.length === 0) {
-        setNotes([]);
-        setAvailableTags([]);
-        setLoading(false);
-        return;
-      }
-
-      // 构建查询：只显示用户班级中的笔记
+      // 管理员可以查看所有笔记，普通用户只能查看自己班级的笔记
       const { data: notesData, error } = await supabase
         .from('notes')
         .select(`
@@ -80,13 +74,23 @@ export default function NotesPage() {
           )
         `)
         .eq('status', 'approved')
-        .in('class_id', userClassIds)
         .order('created_at', { ascending: false });
+
+      // 过滤：管理员看全部，普通用户只看自己班级的
+      let filteredNotes = notesData || [];
+      if (!isAdmin && userClassIds.length > 0) {
+        filteredNotes = filteredNotes.filter((n: any) =>
+          userClassIds.includes(n.class_id)
+        );
+      } else if (!isAdmin && userClassIds.length === 0) {
+        // 非管理员且没有班级，返回空列表
+        filteredNotes = [];
+      }
 
       if (error) {
         console.error('获取笔记失败:', error);
       } else {
-        const formattedNotes = (notesData || []).map((n: any) => ({
+        const formattedNotes = filteredNotes.map((n: any) => ({
           ...n,
           tags: n.tags || [],
           user_name: '用户',

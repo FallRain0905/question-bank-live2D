@@ -152,7 +152,27 @@ export default function AdminPage() {
 
   const handleApproveQuestion = async (questionId: string) => {
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert('请先登录');
+      return;
+    }
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      }
+    );
+
+    const { data, error } = await authSupabase
       .from('questions')
       .update({ status: 'approved' })
       .eq('id', questionId)
@@ -168,7 +188,27 @@ export default function AdminPage() {
 
   const handleRejectQuestion = async (questionId: string) => {
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert('请先登录');
+      return;
+    }
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      }
+    );
+
+    const { data, error } = await authSupabase
       .from('questions')
       .update({ status: 'rejected' })
       .eq('id', questionId)
@@ -184,7 +224,27 @@ export default function AdminPage() {
 
   const handleApproveNote = async (noteId: string) => {
     const supabase = getSupabase();
-    const { error } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert('请先登录');
+      return;
+    }
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      }
+    );
+
+    const { error } = await authSupabase
       .from('notes')
       .update({ status: 'approved' })
       .eq('id', noteId);
@@ -199,7 +259,27 @@ export default function AdminPage() {
 
   const handleRejectNote = async (noteId: string) => {
     const supabase = getSupabase();
-    const { error } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert('请先登录');
+      return;
+    }
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      }
+    );
+
+    const { error } = await authSupabase
       .from('notes')
       .update({ status: 'rejected' })
       .eq('id', noteId);
@@ -215,13 +295,36 @@ export default function AdminPage() {
   const handleDeleteQuestion = async (questionId: string) => {
     if (!confirm('确定要删除这道题目吗？')) return;
 
+    // 获取当前用户的 session token 用于 RLS 操作
     const supabase = getSupabase();
-    const { error } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert('请先登录');
+      return;
+    }
+
+    // 创建带认证上下文的客户端
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      }
+    );
+
+    const { error } = await authSupabase
       .from('questions')
       .delete()
       .eq('id', questionId);
 
     if (error) {
+      console.error('删除题目失败:', error);
       alert('删除失败: ' + error.message);
     } else {
       alert('删除成功！');
@@ -232,7 +335,28 @@ export default function AdminPage() {
   const handleDeleteNote = async (note: NoteWithTags) => {
     if (!confirm('确定要删除这篇笔记吗？')) return;
 
+    // 获取当前用户的 session token 用于 RLS 操作
     const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert('请先登录');
+      return;
+    }
+
+    // 创建带认证上下文的客户端
+    const { createClient } = await import('@supabase/supabase-js');
+    const authSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      }
+    );
 
     // 删除文件
     if (note.file_url) {
@@ -247,12 +371,13 @@ export default function AdminPage() {
     }
 
     // 删除记录
-    const { error } = await supabase
+    const { error } = await authSupabase
       .from('notes')
       .delete()
       .eq('id', note.id);
 
     if (error) {
+      console.error('删除笔记失败:', error);
       alert('删除失败: ' + error.message);
     } else {
       alert('删除成功！');

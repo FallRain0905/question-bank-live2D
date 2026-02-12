@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getUserProfiles, getUserDisplayName } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
@@ -101,7 +101,13 @@ export default function QuestionDetailPage() {
         .eq('id', data.user_id)
         .single();
 
-      const userName = profileData?.username || profileData?.display_name || '用户';
+      let userName = '用户';
+      if (profileData) {
+        userName = profileData.username || profileData.display_name || '用户';
+      } else {
+        // 如果没有找到 profile，尝试从 user_metadata 获取或自动创建
+        userName = await getUserDisplayName(data.user_id);
+      }
 
       setQuestion({
         ...data,
@@ -109,7 +115,7 @@ export default function QuestionDetailPage() {
         user_name: userName,
       });
 
-      setQuestionAuthor(profileData);
+      setQuestionAuthor(profileData || { id: data.user_id, username: userName });
     }
 
     setLoading(false);
@@ -130,23 +136,19 @@ export default function QuestionDetailPage() {
       // 获取所有评论用户 ID
       const userIds = [...new Set(data.map(c => c.user_id))];
 
-      // 批量获取用户信息
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .in('id', userIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      // 使用工具函数批量获取用户信息
+      const profileMap = await getUserProfiles(userIds);
 
       // 获取每个评论的用户信息
       const commentsWithUsers = await Promise.all(
         data.map(async (comment) => {
           const profile = profileMap.get(comment.user_id);
+          const displayName = profile?.username || profile?.display_name || '用户';
           const userWithComments = {
             ...comment,
             user: {
               id: comment.user_id,
-              username: profile?.username || profile?.display_name,
+              username: displayName,
               email: profile?.id || '',
             },
           } as CommentWithUser;
@@ -159,14 +161,19 @@ export default function QuestionDetailPage() {
             .order('created_at', { ascending: true });
 
           if (replies && replies.length > 0) {
+            // 获取回复者的用户 ID
+            const replyUserIds = [...new Set(replies.map(r => r.user_id))];
+            const replyProfileMap = await getUserProfiles(replyUserIds);
+
             userWithComments.replies = await Promise.all(
               replies.map(async (reply) => {
-                const replyProfile = profileMap.get(reply.user_id);
+                const replyProfile = replyProfileMap.get(reply.user_id);
+                const replyDisplayName = replyProfile?.username || replyProfile?.display_name || '用户';
                 return {
                   ...reply,
                   user: {
                     id: reply.user_id,
-                    username: replyProfile?.username || replyProfile?.display_name,
+                    username: replyDisplayName,
                     email: replyProfile?.id || '',
                   },
                 };

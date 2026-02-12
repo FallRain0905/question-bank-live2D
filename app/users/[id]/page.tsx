@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getUserDisplayName } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
@@ -55,7 +55,7 @@ export default function UserProfilePage() {
       setProfileUser({
         id: profileData.id,
         email: profileData.email || '', // user_profiles 可能不存储 email
-        username: profileData.username || profileData.display_name,
+        username: profileData.username || profileData.display_name || '用户',
         createdAt: profileData.created_at,
       });
     } else {
@@ -73,6 +73,15 @@ export default function UserProfilePage() {
           id: userId,
           email: '',
           username: '用户',
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        // 尝试使用工具函数获取显示名称
+        const displayName = await getUserDisplayName(userId, currentUser);
+        setProfileUser({
+          id: userId,
+          email: '',
+          username: displayName,
           createdAt: new Date().toISOString(),
         });
       }

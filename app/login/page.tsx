@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabase } from '@/lib/supabase';
@@ -13,26 +13,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [supabaseReady, setSupabaseReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
+  // 使用 ref 防止组件卸载后更新状态
+  const isMounted = useRef(true);
+
+  // 确保只在客户端渲染，避免 hydration 不匹配
   useEffect(() => {
-    // 检查 Supabase 是否可用
-    try {
-      getSupabase();
-      setSupabaseReady(true);
-    } catch (err) {
-      console.error('Supabase 初始化失败:', err);
-      setError('系统初始化失败，请刷新页面重试');
-    }
+    setIsClient(true);
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!supabaseReady) {
-      setError('系统初始化中，请稍后...');
-      return;
-    }
+    if (loading) return; // 防止重复提交
 
     setLoading(true);
     setError('');
@@ -83,9 +82,10 @@ export default function LoginPage() {
         if (error) {
           setError(error.message);
         } else if (data.session) {
-          // 登录成功
+          // 登录成功 - 使用 router.push 而不是强刷
           router.push('/');
           router.refresh();
+          return; // 直接返回，不执行 setLoading(false)
         } else {
           setError('登录失败，请重试');
         }
@@ -94,19 +94,29 @@ export default function LoginPage() {
       console.error('登录/注册失败:', err);
       setError(err?.message || '操作失败，请重试');
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
+
+  // 服务端渲染时显示占位，避免 hydration 不匹配
+  if (!isClient) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">加载中...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
-        {!supabaseReady ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-500">正在初始化...</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
             {isSignUp ? '注册账号' : '登录'}
           </h1>
@@ -179,6 +189,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center text-sm text-gray-600">
             {isSignUp ? '已有账号？' : '还没有账号？'}
             <button
+              type="button"
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError('');
@@ -196,7 +207,6 @@ export default function LoginPage() {
             </Link>
           </div>
         </div>
-        )}
       </div>
     </div>
   );
