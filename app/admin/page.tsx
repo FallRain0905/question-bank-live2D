@@ -170,7 +170,7 @@ export default function AdminPage() {
       }
     );
 
-    const { data, error } = await authSupabase
+    const { error } = await authSupabase
       .from('questions')
       .update({ status: 'approved' })
       .eq('id', questionId)
@@ -206,7 +206,7 @@ export default function AdminPage() {
       }
     );
 
-    const { data, error } = await authSupabase
+    const { error } = await authSupabase
       .from('questions')
       .update({ status: 'rejected' })
       .eq('id', questionId)
