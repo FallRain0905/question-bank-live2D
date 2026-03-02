@@ -5,8 +5,16 @@ export interface Question {
   user_id: string;
   question_text: string | null;
   question_image_url: string | null;
+  question_file_url: string | null;
+  question_file_name: string | null;
+  question_file_type: string | null;
+  question_file_size: number | null;
   answer_text: string | null;
   answer_image_url: string | null;
+  answer_file_url: string | null;
+  answer_file_name: string | null;
+  answer_file_type: string | null;
+  answer_file_size: number | null;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }

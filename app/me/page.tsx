@@ -485,6 +485,12 @@ function QuestionItem({ question, onDelete }: {
             <h3 className="font-medium text-gray-900">题目</h3>
             {getStatusBadge(question.status)}
           </div>
+          {question.question_file_url && (
+            <div className="flex items-center gap-2 text-sm text-blue-600 mb-2">
+              <span>📄</span>
+              <span>{question.question_file_name || '文档'}</span>
+            </div>
+          )}
           {question.question_text && (
             <p className="text-gray-700 text-sm whitespace-pre-wrap line-clamp-3">
               {question.question_text}

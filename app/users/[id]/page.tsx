@@ -89,12 +89,12 @@ export default function UserProfilePage() {
 
     // 检查关注状态
     if (currentUser) {
-      const { data: followData } = await supabase
+      const { data: followData, error: followError } = await supabase
         .from('follows')
         .select('id')
         .eq('follower_id', currentUser.id)
         .eq('following_id', userId)
-        .single();
+        .maybeSingle();
       setIsFollowing(!!followData);
 
       // 获取收藏内容
@@ -345,6 +345,12 @@ export default function UserProfilePage() {
                   className="block bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition"
                 >
                   <div className="mb-3">
+                    {question.question_file_url && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600 mb-2">
+                        <span>📄</span>
+                        <span>{question.question_file_name || '文档'}</span>
+                      </div>
+                    )}
                     {question.question_text && (
                       <p className="text-gray-800 line-clamp-2">{question.question_text}</p>
                     )}

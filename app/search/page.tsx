@@ -355,6 +355,12 @@ export default function SearchPage() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition">
                   {/* 题目预览 */}
                   <div className="mb-3">
+                    {question.question_file_url && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600 mb-2">
+                        <span>📄</span>
+                        <span>{question.question_file_name || '文档'}</span>
+                      </div>
+                    )}
                     {question.question_text && (
                       <p className="text-gray-800 line-clamp-2">{question.question_text}</p>
                     )}

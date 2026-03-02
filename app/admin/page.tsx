@@ -13,7 +13,6 @@ export default function AdminPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isClassModerator, setIsClassModerator] = useState(false);
-  const [userClassIds, setUserClassIds] = useState<string[]>([]);
   const [userClasses, setUserClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,6 @@ export default function AdminPage() {
       if (classMembers && classMembers.length > 0) {
         setIsClassModerator(true);
         const classIds = classMembers.map((c: any) => c.class_id);
-        setUserClassIds(classIds);
         setUserClasses(classMembers.map((c: any) => ({
           id: c.classes.id,
           name: c.classes.name,

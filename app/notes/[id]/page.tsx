@@ -200,13 +200,13 @@ export default function NoteDetailPage() {
     if (!user) return;
     const supabase = getSupabase();
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('favorites')
       .select('id')
       .eq('user_id', user.id)
       .eq('target_type', 'note')
       .eq('target_id', noteId)
-      .single();
+      .maybeSingle();
 
     setIsFavorited(!!data);
   };
@@ -215,12 +215,12 @@ export default function NoteDetailPage() {
     if (!user || !note) return;
     const supabase = getSupabase();
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('follows')
       .select('id')
       .eq('follower_id', user.id)
       .eq('following_id', note.user_id)
-      .single();
+      .maybeSingle();
 
     setIsFollowing(!!data);
   };

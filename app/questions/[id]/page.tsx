@@ -6,6 +6,7 @@ import { getSupabase, getUserProfiles, getUserDisplayName } from '@/lib/supabase
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
+import { formatFileSize } from '@/lib/upload';
 import type { QuestionWithTags, CommentWithUser } from '@/types';
 
 export default function QuestionDetailPage() {
@@ -193,13 +194,13 @@ export default function QuestionDetailPage() {
     if (!user) return;
     const supabase = getSupabase();
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('favorites')
       .select('id')
       .eq('user_id', user.id)
       .eq('target_type', 'question')
       .eq('target_id', questionId)
-      .single();
+      .maybeSingle();
 
     setIsFavorited(!!data);
   };
@@ -208,12 +209,12 @@ export default function QuestionDetailPage() {
     if (!user || !question) return;
     const supabase = getSupabase();
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('follows')
       .select('id')
       .eq('follower_id', user.id)
       .eq('following_id', question.user_id)
-      .single();
+      .maybeSingle();
 
     setIsFollowing(!!data);
   };
@@ -455,9 +456,41 @@ export default function QuestionDetailPage() {
           {/* 题目 */}
           <div className="mb-6">
             <h2 className="text-lg font-medium text-gray-900 mb-3">题目</h2>
+
+            {/* 文档预览和下载 */}
+            {question.question_file_url && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">📄</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{question.question_file_name || '题目文档'}</p>
+                    {(question.question_file_type || question.question_file_size) && (
+                      <p className="text-xs text-gray-500">
+                        {question.question_file_type && <span>{question.question_file_type}</span>}
+                        {question.question_file_type && question.question_file_size && <span> · </span>}
+                        {question.question_file_size && <span>{formatFileSize(question.question_file_size)}</span>}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <a
+                  href={question.question_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                >
+                  <span>下载题目文档</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </a>
+              </div>
+            )}
+
             {question.question_text && (
               <p className="text-gray-700 whitespace-pre-wrap">{question.question_text}</p>
             )}
+
             {question.question_image_url && (
               <img
                 src={question.question_image_url}
@@ -470,9 +503,41 @@ export default function QuestionDetailPage() {
           {/* 答案 */}
           <div className="border-t border-gray-100 pt-6">
             <h2 className="text-lg font-medium text-gray-900 mb-3">答案</h2>
+
+            {/* 答案文档预览和下载 */}
+            {question.answer_file_url && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">📄</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{question.answer_file_name || '答案文档'}</p>
+                    {(question.answer_file_type || question.answer_file_size) && (
+                      <p className="text-xs text-gray-500">
+                        {question.answer_file_type && <span>{question.answer_file_type}</span>}
+                        {question.answer_file_type && question.answer_file_size && <span> · </span>}
+                        {question.answer_file_size && <span>{formatFileSize(question.answer_file_size)}</span>}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <a
+                  href={question.answer_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                >
+                  <span>下载答案文档</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </a>
+              </div>
+            )}
+
             {question.answer_text && (
               <p className="text-gray-700 whitespace-pre-wrap">{question.answer_text}</p>
             )}
+
             {question.answer_image_url && (
               <img
                 src={question.answer_image_url}

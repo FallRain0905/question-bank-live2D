@@ -161,6 +161,9 @@ export default function Navbar() {
                 <Link href="/notes/upload" className="text-gray-600 hover:text-blue-600 transition">
                   上传笔记
                 </Link>
+                <Link href="/parse" className="text-gray-600 hover:text-blue-600 transition">
+                  文档转换
+                </Link>
                 {(user.is_admin || isClassModerator) && (
                   <Link href="/admin" className="text-gray-600 hover:text-blue-600 transition">
                     审核
