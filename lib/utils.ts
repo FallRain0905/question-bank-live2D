@@ -15,7 +15,7 @@ export async function uploadImage(
   const filePath = `${userId}/${fileName}`;
 
   // 上传文件
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('question-images')
     .upload(filePath, file);
 

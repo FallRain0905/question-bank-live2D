@@ -20,11 +20,9 @@ export default function QuestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isFavorited, setIsFavorited] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
 
   // 未登录时的用户状态检查
   useEffect(() => {
@@ -41,7 +39,6 @@ export default function QuestionDetailPage() {
   useEffect(() => {
     if (user && question) {
       checkFavoriteStatus();
-      checkFollowStatus();
     }
   }, [user, question]);
 
@@ -194,7 +191,7 @@ export default function QuestionDetailPage() {
     if (!user) return;
     const supabase = getSupabase();
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('favorites')
       .select('id')
       .eq('user_id', user.id)
@@ -203,20 +200,6 @@ export default function QuestionDetailPage() {
       .maybeSingle();
 
     setIsFavorited(!!data);
-  };
-
-  const checkFollowStatus = async () => {
-    if (!user || !question) return;
-    const supabase = getSupabase();
-
-    const { data, error } = await supabase
-      .from('follows')
-      .select('id')
-      .eq('follower_id', user.id)
-      .eq('following_id', question.user_id)
-      .maybeSingle();
-
-    setIsFollowing(!!data);
   };
 
   const handleFavorite = async () => {
@@ -244,43 +227,6 @@ export default function QuestionDetailPage() {
           target_id: questionId,
         });
       setIsFavorited(true);
-    }
-  };
-
-  const handleFollow = async () => {
-    if (!user) {
-      alert('请先登录');
-      return;
-    }
-
-    if (!question) return;
-
-    const supabase = getSupabase();
-
-    if (isFollowing) {
-      await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', user.id)
-        .eq('following_id', question.user_id);
-      setIsFollowing(false);
-    } else {
-      await supabase
-        .from('follows')
-        .insert({
-          follower_id: user.id,
-          following_id: question.user_id,
-        });
-      setIsFollowing(true);
-
-      // 创建通知
-      await supabase.from('notifications').insert({
-        user_id: question.user_id,
-        type: 'follow',
-        title: '新增粉丝',
-        content: `${user.user_metadata?.username || user.email} 关注了你`,
-        link: `/users/${user.id}`,
-      });
     }
   };
 
@@ -433,22 +379,13 @@ export default function QuestionDetailPage() {
                 {isFavorited ? '⭐' : '☆'}
               </button>
               {isOwner && (
-                <>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition"
-                    title="编辑"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-lg transition"
-                    title="删除"
-                  >
-                    🗑️
-                  </button>
-                </>
+                <button
+                  onClick={handleDelete}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-lg transition"
+                  title="删除"
+                >
+                  🗑️
+                </button>
               )}
             </div>
           </div>

@@ -107,7 +107,7 @@ export async function uploadFile(
   const mimeType = file.type || getFileMimeType(file.name);
 
   // 上传文件
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(bucket)
     .upload(filePath, file, {
       contentType: mimeType,
@@ -167,7 +167,7 @@ export async function uploadAvatar(
   const filePath = `avatars/${fileName}`;
 
   // 上传文件
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('files')
     .upload(filePath, file, {
       contentType: file.type,

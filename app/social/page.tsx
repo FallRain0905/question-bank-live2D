@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { getSupabase, getUserProfiles } from '@/lib/supabase';
 import { uploadImage } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,7 +29,6 @@ interface PostComment {
 }
 
 export default function SocialPage() {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);

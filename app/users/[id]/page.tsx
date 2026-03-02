@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { getSupabase, getUserDisplayName } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -13,7 +13,6 @@ type TabType = 'questions' | 'notes' | 'favorites';
 
 export default function UserProfilePage() {
   const params = useParams();
-  const router = useRouter();
   const userId = params.id as string;
 
   const [profileUser, setProfileUser] = useState<any>(null);
@@ -89,7 +88,7 @@ export default function UserProfilePage() {
 
     // 检查关注状态
     if (currentUser) {
-      const { data: followData, error: followError } = await supabase
+      const { data: followData } = await supabase
         .from('follows')
         .select('id')
         .eq('follower_id', currentUser.id)

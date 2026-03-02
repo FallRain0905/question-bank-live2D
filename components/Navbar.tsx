@@ -8,7 +8,6 @@ import { getSupabase, clearSupabaseCache } from '@/lib/supabase';
 export default function Navbar() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [isClassModerator, setIsClassModerator] = useState(false);
 
   // 使用 ref 来跟踪组件是否已卸载
@@ -122,12 +121,6 @@ export default function Navbar() {
       clearSupabaseCache();
       window.location.href = '/';
     }
-  };
-
-  const getDisplayName = () => {
-    if (user?.username) return user.username;
-    if (user?.display_name) return user.display_name;
-    return user?.email || '';
   };
 
   return (

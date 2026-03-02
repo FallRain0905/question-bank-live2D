@@ -3,7 +3,7 @@
  * 支持解析 PDF、DOCX、Markdown、TXT 等格式，转换成 Markdown
  */
 
-import pdf from 'pdf-parse';
+const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 
 /**
