@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase';
 
-// POST - 通过邀请码加入班级
+// POST - 通过邀请码申请加入班级
 export async function POST(request: NextRequest) {
   try {
     const supabase = createSupabaseServerClient();
@@ -23,29 +23,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
-    // 创建一个带认证上下文的客户端用于 RLS 操作
-    const { createClient } = await import('@supabase/supabase-js');
-    const authSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
-
     const body = await request.json();
-    const { inviteCode } = body;
+    const { inviteCode, message } = body;
 
     if (!inviteCode?.trim()) {
       return NextResponse.json({ error: '邀请码不能为空' }, { status: 400 });
     }
 
     // 查找班级
-    const { data: classData, error: classError } = await authSupabase
+    const { data: classData, error: classError } = await supabase
       .from('classes')
       .select('*')
       .eq('invite_code', inviteCode.trim().toUpperCase())
@@ -55,31 +41,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '邀请码无效' }, { status: 404 });
     }
 
-    // 检查是否已经是班级成员
-    const { data: existingMember } = await authSupabase
+    // 检查是否已经有待审核或已批准的记录
+    const { data: existingMember } = await supabase
       .from('class_members')
-      .select('*')
+      .select('status')
       .eq('class_id', classData.id)
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (existingMember) {
-      return NextResponse.json({ error: '你已经是该班级成员' }, { status: 400 });
+      if (existingMember.status === 'approved') {
+        return NextResponse.json({ error: '你已经是该班级成员' }, { status: 400 });
+      } else if (existingMember.status === 'pending') {
+        return NextResponse.json({ error: '你已经提交了加入申请，请等待审核' }, { status: 400 });
+      }
     }
 
-    // 加入班级
-    const { error: joinError } = await authSupabase
+    // 插入加入申请（状态为 pending）
+    const { error: insertError } = await supabase
       .from('class_members')
       .insert({
         class_id: classData.id,
         user_id: user.id,
         role: 'member',
+        status: 'pending',
+        message: message?.trim() || null,
       });
 
-    if (joinError) throw joinError;
+    if (insertError) throw insertError;
 
     return NextResponse.json({
       success: true,
+      message: '申请已提交，等待班级管理员审核',
       class: {
         id: classData.id,
         name: classData.name,
@@ -87,7 +80,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('加入班级失败:', error);
-    return NextResponse.json({ error: '加入班级失败' }, { status: 500 });
+    console.error('申请加入班级失败:', error);
+    return NextResponse.json({ error: '申请失败，请重试' }, { status: 500 });
   }
 }

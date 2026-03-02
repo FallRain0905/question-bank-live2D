@@ -16,6 +16,8 @@ export interface Question {
   answer_file_type: string | null;
   answer_file_size: number | null;
   status: 'pending' | 'approved' | 'rejected';
+  visibility: 'class' | 'public';
+  class_id: string | null;
   created_at: string;
 }
 
@@ -23,6 +25,7 @@ export interface QuestionWithTags extends Question {
   tags: Tag[];
   user_email?: string;
   user_name?: string;
+  user_avatar_url?: string;
   is_favorited?: boolean;
   favorites_count?: number;
 }
@@ -39,6 +42,8 @@ export interface NewQuestion {
   answer_text?: string;
   answer_image?: File;
   tags: string[];
+  class_id?: string;
+  visibility?: 'class' | 'public';
 }
 
 export interface UserProfile {
@@ -46,6 +51,8 @@ export interface UserProfile {
   email: string;
   username?: string;
   display_name?: string;
+  avatar_url?: string;
+  bio?: string;
   is_admin?: boolean;
 }
 
@@ -61,6 +68,8 @@ export interface Note {
   file_size: number | null;
   tags_id: UUID[] | null;
   status: 'pending' | 'approved' | 'rejected';
+  visibility: 'class' | 'public';
+  class_id: string | null;
   likes_count: number;
   created_at: string;
   updated_at: string;
@@ -70,6 +79,7 @@ export interface NoteWithTags extends Note {
   tags: Tag[];
   user_email?: string;
   user_name?: string;
+  user_avatar_url?: string;
   is_liked?: boolean;
   is_favorited?: boolean;
   favorites_count?: number;
@@ -80,6 +90,8 @@ export interface NewNote {
   description?: string;
   file?: File;
   tags: string[];
+  class_id?: string;
+  visibility?: 'class' | 'public';
 }
 
 export interface Like {
@@ -108,6 +120,7 @@ export interface CommentWithUser extends Comment {
   user: {
     id: string;
     username?: string;
+    avatar_url?: string;
     email: string;
   };
   replies?: CommentWithUser[];
@@ -126,11 +139,12 @@ export interface Favorite {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'comment' | 'reply' | 'like' | 'follow' | 'approve';
+  type: 'comment' | 'reply' | 'like' | 'follow' | 'approve' | 'class_join';
   title: string;
   content: string | null;
   link: string | null;
   is_read: boolean;
+  extra_data?: any;
   created_at: string;
 }
 
@@ -166,9 +180,12 @@ export interface ClassMember {
   class_id: string;
   user_id: string;
   role: 'creator' | 'moderator' | 'member';
+  status: 'pending' | 'approved' | 'rejected';
+  message?: string;
   joined_at: string;
 }
 
 export interface ClassWithRole extends Class {
   userRole?: 'creator' | 'moderator' | 'member';
+  userStatus?: 'pending' | 'approved' | 'rejected';
 }
