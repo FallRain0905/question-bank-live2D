@@ -139,15 +139,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 transition-all">
+    <nav className="bg-brand-950/80 backdrop-blur-md border-b border-brand-800 sticky top-0 z-50 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold text-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center text-brand-50 font-bold text-sm group-hover:scale-105 transition-transform">
               学
             </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+            <span className="text-lg font-bold text-brand-100">
               学习共享
             </span>
           </Link>
@@ -211,14 +211,14 @@ export default function Navbar() {
                 <div className="relative">
                   <Link
                     href="/notifications"
-                    className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                    className="p-2 text-brand-400 hover:text-brand-200 hover:bg-brand-800 rounded-lg transition-all"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                   </Link>
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                    <span className="absolute top-1 right-1 w-5 h-5 bg-brand-500 text-brand-50 text-xs font-medium rounded-full flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -228,45 +228,45 @@ export default function Navbar() {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === 'user' ? null : 'user')}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 rounded-lg transition-all"
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-brand-800 rounded-lg transition-all"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-accent-400 flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center text-brand-50 text-sm font-medium">
                       {user.username?.[0] || user.email[0].toUpperCase()}
                     </div>
-                    <span className="hidden sm:block text-sm font-medium text-slate-700">
+                    <span className="hidden sm:block text-sm font-medium text-brand-200">
                       {user.username || '我的'}
                     </span>
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
 
                   {dropdownOpen === 'user' && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-slate-200 shadow-lg shadow-slate-100 py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-brand-800 rounded-xl border border-brand-700 shadow-lg py-1 z-50">
                       <Link
                         href="/me"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-brand-200 hover:bg-brand-700 transition-colors"
                         onClick={() => setDropdownOpen(null)}
                       >
-                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         个人中心
                       </Link>
                       <Link
                         href="/me?tab=favorites"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-brand-200 hover:bg-brand-700 transition-colors"
                         onClick={() => setDropdownOpen(null)}
                       >
-                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                         我的收藏
                       </Link>
-                      <hr className="my-1 border-slate-100" />
+                      <hr className="my-1 border-brand-700" />
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-brand-300 hover:bg-brand-700 hover:text-red-400 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -280,7 +280,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="px-5 py-2 bg-slate-900 text-white text-sm font-medium rounded-full hover:bg-slate-800 transition-all hover:shadow-lg"
+                className="px-5 py-2 bg-brand-500 text-brand-50 text-sm font-medium rounded-full hover:bg-brand-400 transition-all hover:shadow-glow"
               >
                 登录 / 注册
               </Link>
@@ -289,7 +289,7 @@ export default function Navbar() {
             {/* 移动端菜单按钮 */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+              className="md:hidden p-2 text-brand-400 hover:bg-brand-800 rounded-lg"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileMenuOpen ? (
@@ -307,7 +307,7 @@ export default function Navbar() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="md:hidden py-4 border-t border-slate-100"
+            className="md:hidden py-4 border-t border-brand-800"
           >
             <div className="space-y-1">
               <MobileLink href="/search" onClick={() => setMobileMenuOpen(false)}>📚 题库</MobileLink>
@@ -328,11 +328,11 @@ export default function Navbar() {
                       <MobileLink href="/admin/tags" onClick={() => setMobileMenuOpen(false)}>🏷️ 标签管理</MobileLink>
                     </>
                   )}
-                  <hr className="my-2 border-slate-100" />
+                  <hr className="my-2 border-brand-800" />
                   <MobileLink href="/me" onClick={() => setMobileMenuOpen(false)}>👤 个人中心</MobileLink>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full text-left px-4 py-3 text-sm text-brand-300 hover:bg-brand-800 hover:text-red-400 transition-colors rounded-lg"
                   >
                     🚪 退出登录
                   </button>
@@ -364,8 +364,8 @@ function Dropdown({
         onClick={onToggle}
         className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1 ${
           isOpen
-            ? 'bg-primary-50 text-primary-700'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            ? 'bg-brand-700 text-brand-50'
+            : 'text-brand-300 hover:bg-brand-800 hover:text-brand-100'
         }`}
       >
         {trigger}
@@ -383,17 +383,17 @@ function Dropdown({
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-lg shadow-slate-100 py-1.5 z-50"
+          className="absolute top-full left-0 mt-2 w-56 bg-brand-800 rounded-xl border border-brand-700 py-1.5 z-50"
         >
           {items.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={onToggle}
-              className="flex flex-col px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+              className="flex flex-col px-4 py-2.5 text-sm text-brand-200 hover:bg-brand-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
             >
-              <span className="text-slate-700">{item.label}</span>
-              <span className="text-xs text-slate-400 mt-0.5">{item.description}</span>
+              <span>{item.label}</span>
+              <span className="text-xs text-brand-500 mt-0.5">{item.description}</span>
             </Link>
           ))}
         </motion.div>
@@ -408,7 +408,7 @@ function MobileLink({ href, onClick, children }: { href: string; onClick: () => 
     <Link
       href={href}
       onClick={onClick}
-      className="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+      className="block px-4 py-3 text-sm text-brand-200 hover:bg-brand-800 rounded-lg transition-colors"
     >
       {children}
     </Link>
