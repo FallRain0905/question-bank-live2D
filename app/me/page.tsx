@@ -266,7 +266,6 @@ export default function MePage() {
   }
 
   const displayName = userProfile?.username || userProfile?.display_name || user.user_metadata?.username || user.user_metadata?.display_name || user.email;
-  const hasUsername = !!userProfile?.username || !!user.user_metadata?.username;
   const avatarUrl = userProfile?.avatar_url;
 
   return (

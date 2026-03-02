@@ -200,7 +200,7 @@ export default function NoteDetailPage() {
     if (!user) return;
     const supabase = getSupabase();
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('favorites')
       .select('id')
       .eq('user_id', user.id)
@@ -215,7 +215,7 @@ export default function NoteDetailPage() {
     if (!user || !note) return;
     const supabase = getSupabase();
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('follows')
       .select('id')
       .eq('follower_id', user.id)
