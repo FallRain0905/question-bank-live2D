@@ -398,7 +398,6 @@ export default function AdminPage() {
   ];
 
   const currentItems = contentType === 'questions' ? questions : notes;
-  const currentCount = currentItems.length;
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50">
