@@ -28,6 +28,10 @@
 - **班级管理**：设置管理员，管理班级成员
 - **班级内容**：班级内分享专属题目和笔记
 - **邀请码**：通过邀请码快速加入班级
+- **班级审核**：新创建的班级需要超级管理员审核后才能对其他用户可见
+
+#### 审核机制
+用户创建班级时状态为 `pending`，超级管理员审核后状态变为 `approved`。班级创建者自动成为该班级成员（状态为 `approved`）。
 
 ### 管理功能
 - **内容审核**：管理员审核用户提交的题目和笔记
@@ -96,6 +100,39 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=你的_supabase_anon_key
 5. `supabase/admin_features.sql` - 管理功能表
 6. `supabase/new_features.sql` - 新功能（评论、收藏、通知等）
 7. `supabase/add_question_files.sql` - 题目文档字段
+
+**注意：** 如果已执行过 `class_system.sql`，在启用班级审核功能前需要执行以下修复文件：
+
+- `supabase/fix_trigger_insert.sql` - 修复触发器歧义问题
+- `supabase/fix_classes_policy_v3.sql` - 简化 RLS 策略
+- `supabase/fix_function.sql` - 修复辅助函数
+
+执行后重启开发服务器清除 schema 缓存。
+
+#### 班级审核相关修复
+| 文件 | 说明 |
+|------|------|
+| `supabase/class_approval_fixed.sql` | 班级审核功能（状态列 + RLS 策略）|
+| `supabase/class_visibility_fixed.sql` | 班级可见性控制 |
+| `supabase/fix_trigger_insert.sql` | 修复触发器 INSERT 歧义 |
+| `supabase/fix_classes_policy_v3.sql` | 简化 RLS 策略 |
+| `supabase/fix_function.sql` | 修复辅助函数 |
+
+#### 已解决的技术问题
+
+**1. RLS 策略递归问题**
+- **错误信息**：`infinite recursion detected in policy for relation "class_members"`
+- **解决方案**：将管理员检查改为使用 `classes` 表，避免子查询引用自身表
+
+**2. 列名歧义问题**
+- **错误信息**：`column reference "creator_id" is ambiguous`
+- **解决方案**：
+  - RLS 策略中使用表名前缀：`classes.creator_id`
+  - 触发器 INSERT 语句中明确所有列对应关系
+
+**3. Schema Cache 问题**
+- **错误信息**：`Could not find 'status' column of 'classes' in schema cache`
+- **解决方案**：执行 SQL 迁移后重启开发服务器
 
 ### 本地开发
 ```bash

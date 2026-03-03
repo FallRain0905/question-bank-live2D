@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, clearUserProfileCache } from '@/lib/supabase';
 import { getFileIcon, formatFileSize, deleteFile, uploadAvatar } from '@/lib/upload';
 import Link from 'next/link';
 import type { QuestionWithTags, NoteWithTags } from '@/types';
@@ -86,6 +86,9 @@ export default function MePage() {
         })
         .eq('id', user.id);
 
+      // 清除用户资料缓存，确保其他页面能看到最新数据
+      clearUserProfileCache(user.id);
+
       // 重新获取用户信息
       const { data: { user: updatedUser } } = await supabase.auth.getUser();
       setUser(updatedUser);
@@ -114,6 +117,9 @@ export default function MePage() {
         .from('user_profiles')
         .update({ avatar_url: url })
         .eq('id', user.id);
+
+      // 清除用户资料缓存，确保其他页面能看到最新数据
+      clearUserProfileCache(user.id);
 
       // 重新加载用户信息
       await loadUserProfile();

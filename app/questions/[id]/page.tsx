@@ -8,6 +8,7 @@ import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
 import { formatFileSize } from '@/lib/upload';
 import type { QuestionWithTags, CommentWithUser } from '@/types';
+import { UserAvatar, UserTag } from '@/components/UserAvatar';
 
 export default function QuestionDetailPage() {
   const params = useParams();
@@ -488,20 +489,16 @@ export default function QuestionDetailPage() {
           </div>
 
           {/* 上传信息 */}
-          <div className="border-t border-brand-900 pt-4 mt-6 flex items-center justify-between">
-            <Link
-              href={`/users/${question.user_id}`}
-              className="flex items-center gap-2 text-sm text-brand-300 hover:text-brand-500 transition"
-            >
-              {questionAuthor?.avatar_url ? (
-                <img src={questionAuthor.avatar_url} alt="头像" className="w-6 h-6 rounded-full object-cover" />
-              ) : (
-                <span className="w-6 h-6 bg-brand-900 rounded-full flex items-center justify-center text-xs">👤</span>
-              )}
-              <span>{question.user_name || '用户'}</span>
-            </Link>
-            <div className="text-sm text-brand-400">
-              上传于 {formatDistanceToNow(new Date(question.created_at), { locale: zhCN, addSuffix: true })}
+          <div className="border-t border-brand-900 pt-5 mt-6">
+            <div className="flex items-center justify-between">
+              <UserAvatar
+                userId={question.user_id}
+                username={question.user_name}
+                avatarUrl={questionAuthor?.avatar_url}
+                email={questionAuthor?.email}
+                size="md"
+                subtitle={`上传于 ${formatDistanceToNow(new Date(question.created_at), { locale: zhCN, addSuffix: true })}`}
+              />
             </div>
           </div>
         </div>
@@ -543,21 +540,16 @@ export default function QuestionDetailPage() {
               <p className="text-brand-400 text-center py-8">还没有评论，快来抢沙发吧！</p>
             ) : (
               comments.map((comment) => (
-                <div key={comment.id} className="border-b border-brand-900 pb-4 last:border-0">
+                <div key={comment.id} className="border-b border-brand-900 pb-5 last:border-0">
                   <div className="flex items-start gap-3">
-                    {comment.user.avatar_url ? (
-                      <img src={comment.user.avatar_url} alt={comment.user.username || '头像'} className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 bg-brand-700 rounded-full flex items-center justify-center text-brand-500 font-medium">
-                        {comment.user.username?.[0] || comment.user.email?.[0]?.toUpperCase() || '?'}
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-brand-50">
-                          {comment.user.username || comment.user.email}
-                        </span>
-                        <span className="text-sm text-brand-400">
+                    <UserTag
+                      username={comment.user.username}
+                      avatarUrl={comment.user.avatar_url}
+                      email={comment.user.email}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-xs text-brand-400">
                           {formatDistanceToNow(new Date(comment.created_at), { locale: zhCN, addSuffix: true })}
                         </span>
                       </div>
@@ -607,19 +599,15 @@ export default function QuestionDetailPage() {
                       {comment.replies && comment.replies.length > 0 && (
                         <div className="mt-4 space-y-3 pl-4 border-l-2 border-brand-900">
                           {comment.replies.map((reply) => (
-                            <div key={reply.id} className="flex items-start gap-3">
-                              {reply.user.avatar_url ? (
-                                <img src={reply.user.avatar_url} alt={reply.user.username || '头像'} className="w-8 h-8 rounded-full object-cover" />
-                              ) : (
-                                <div className="w-8 h-8 bg-brand-700 rounded-full flex items-center justify-center text-brand-500 text-sm font-medium">
-                                  {reply.user.username?.[0] || reply.user.email?.[0]?.toUpperCase() || '?'}
-                                </div>
-                              )}
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-brand-50 text-sm">
-                                    {reply.user.username || reply.user.email}
-                                  </span>
+                            <div key={reply.id} className="flex items-start gap-2">
+                              <UserTag
+                                username={reply.user.username}
+                                avatarUrl={reply.user.avatar_url}
+                                email={reply.user.email}
+                                className="flex-1"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-1">
                                   <span className="text-xs text-brand-400">
                                     {formatDistanceToNow(new Date(reply.created_at), { locale: zhCN, addSuffix: true })}
                                   </span>

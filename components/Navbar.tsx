@@ -5,14 +5,15 @@ import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { UserProfile } from '@/types';
 import { getSupabase, clearSupabaseCache } from '@/lib/supabase';
+import { themes, getCurrentTheme, setCurrentTheme, initTheme, type Theme } from '@/lib/theme';
 
 export default function Navbar() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isClassModerator, setIsClassModerator] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState<'discover' | 'create' | 'tools' | 'admin' | 'user' | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState<'discover' | 'create' | 'tools' | 'admin' | 'user' | 'theme' | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [currentTheme, setCurrentThemeState] = useState<Theme>(getCurrentTheme());
 
   // 使用 ref 来跟踪组件是否已卸载
   const isMounted = useRef(true);
@@ -22,7 +23,14 @@ export default function Navbar() {
   // 关闭下拉菜单的点击外部处理
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Element;
+      // 只有点击在按钮外部且没有打开的下拉菜单时才关闭
+      if (
+        !target.closest('button') &&
+        !target.closest('a') &&
+        !target.closest('[role="button"]') &&
+        !target.closest('.absolute')
+      ) {
         setDropdownOpen(null);
       }
     };
@@ -32,6 +40,9 @@ export default function Navbar() {
 
   useEffect(() => {
     isMounted.current = true;
+
+    // 初始化主题
+    initTheme();
 
     // 统一的用户数据初始化函数
     initializeUserData.current = async (userId: string) => {
@@ -138,6 +149,12 @@ export default function Navbar() {
     }
   };
 
+  const handleThemeChange = (themeId: string) => {
+    setCurrentTheme(themeId);
+    setCurrentThemeState(themes[themeId]);
+    setDropdownOpen(null);
+  };
+
   return (
     <nav className="bg-brand-950/80 backdrop-blur-md border-b border-brand-800 sticky top-0 z-50 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -194,6 +211,7 @@ export default function Navbar() {
                     onToggle={() => setDropdownOpen(dropdownOpen === 'admin' ? null : 'admin')}
                     items={[
                       ...(user.is_admin || isClassModerator ? [{ href: '/admin', label: '✅ 内容审核', description: '审核题目和笔记' }] : []),
+                      ...(user.is_admin ? [{ href: '/admin/classes', label: '🎓 班级审核', description: '审核班级创建申请' }] : []),
                       ...(user.is_admin ? [{ href: '/admin/announcements', label: '📢 公告管理', description: '发布平台公告' }] : []),
                       ...(user.is_admin ? [{ href: '/admin/tags', label: '🏷️ 标签管理', description: '管理标签体系' }] : []),
                     ]}
@@ -205,27 +223,88 @@ export default function Navbar() {
 
           {/* 用户操作 */}
           <div className="flex items-center gap-2">
+            {/* 主题选择器 */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(dropdownOpen === 'theme' ? null : 'theme')}
+                className="p-2 text-brand-400 hover:text-brand-200 hover:bg-brand-800 rounded-lg transition-all"
+                title="切换主题"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828-2.828l5.656 5.657a2 2 0 010 2.828l-1.657 1.657a2 2 0 01-2.828 0l-5.656-5.657a2 2 0 010-2.828z" />
+                </svg>
+              </button>
+              {dropdownOpen === 'theme' && (
+                <div className="absolute right-0 mt-2 w-64 bg-brand-800 rounded-xl border border-brand-700 shadow-lg py-2 z-50">
+                  <div className="px-4 py-2 text-xs text-brand-500 font-medium">选择配色主题</div>
+                  {Object.values(themes).map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors ${
+                        currentTheme.id === theme.id
+                          ? 'bg-brand-700 text-brand-100'
+                          : 'text-brand-300 hover:bg-brand-700 hover:text-brand-100'
+                      }`}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-lg"
+                        style={{
+                          background: `linear-gradient(135deg, ${theme.colors[300]}, ${theme.colors[500]})`,
+                        }}
+                      />
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium">{theme.name}</div>
+                        <div className="flex gap-1 mt-1">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: theme.colors[400] }}
+                          />
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: theme.colors[500] }}
+                          />
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: theme.colors[600] }}
+                          />
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: theme.colors[700] }}
+                          />
+                        </div>
+                      </div>
+                      {currentTheme.id === theme.id && (
+                        <svg className="w-4 h-4 text-brand-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-5.58-5.59L16.41 17l1.41-1.41L9 16.17z" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {user ? (
               <>
                 {/* 通知图标 */}
-                <div className="relative">
-                  <Link
-                    href="/notifications"
-                    className="p-2 text-brand-400 hover:text-brand-200 hover:bg-brand-800 rounded-lg transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                  </Link>
+                <Link
+                  href="/notifications"
+                  className="p-2.5 text-brand-400 hover:text-brand-200 hover:bg-brand-800 rounded-lg transition-all relative"
+                  title="通知"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-5 h-5 bg-brand-500 text-brand-50 text-xs font-medium rounded-full flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-brand-500 text-brand-50 text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-brand-800 shadow-lg">
+                      {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
-                </div>
+                </Link>
 
                 {/* 用户菜单 */}
-                <div className="relative" ref={dropdownRef}>
+                <div className="relative">
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === 'user' ? null : 'user')}
                     className="flex items-center gap-2 px-3 py-2 hover:bg-brand-800 rounded-lg transition-all"
@@ -324,6 +403,7 @@ export default function Navbar() {
                   )}
                   {user.is_admin && (
                     <>
+                      <MobileLink href="/admin/classes" onClick={() => setMobileMenuOpen(false)}>🎓 班级审核</MobileLink>
                       <MobileLink href="/admin/announcements" onClick={() => setMobileMenuOpen(false)}>📢 公告管理</MobileLink>
                       <MobileLink href="/admin/tags" onClick={() => setMobileMenuOpen(false)}>🏷️ 标签管理</MobileLink>
                     </>

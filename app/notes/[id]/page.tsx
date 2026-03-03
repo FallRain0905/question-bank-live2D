@@ -8,6 +8,7 @@ import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
 import { getFileIcon, formatFileSize } from '@/lib/upload';
 import type { NoteWithTags, CommentWithUser } from '@/types';
+import { UserAvatar, UserTag } from '@/components/UserAvatar';
 
 export default function NoteDetailPage() {
   const params = useParams();
@@ -524,25 +525,21 @@ export default function NoteDetailPage() {
           )}
 
           {/* 上传信息 */}
-          <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
-            <Link
-              href={`/users/${note.user_id}`}
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition"
-            >
-              {noteAuthor?.avatar_url ? (
-                <img src={noteAuthor.avatar_url} alt="头像" className="w-6 h-6 rounded-full object-cover" />
-              ) : (
-                <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs">👤</span>
-              )}
-              <span>{note.user_name || '用户'}</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-gray-500">
-                上传于 {formatDistanceToNow(new Date(note.created_at), { locale: zhCN, addSuffix: true })}
+          <div className="border-t border-gray-100 pt-5">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <UserAvatar
+                  userId={note.user_id}
+                  username={note.user_name}
+                  avatarUrl={noteAuthor?.avatar_url}
+                  email={noteAuthor?.email}
+                  size="md"
+                  subtitle={`上传于 ${formatDistanceToNow(new Date(note.created_at), { locale: zhCN, addSuffix: true })}`}
+                />
               </div>
               <button
                 onClick={handleFollow}
-                className={`px-3 py-1 text-sm rounded-lg transition ${
+                className={`ml-4 px-4 py-2 text-sm rounded-lg transition ${
                   isFollowing
                     ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
@@ -589,17 +586,16 @@ export default function NoteDetailPage() {
               <p className="text-gray-500 text-center py-8">还没有评论，快来抢沙发吧！</p>
             ) : (
               comments.map((comment) => (
-                <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-0">
+                <div key={comment.id} className="border-b border-gray-100 pb-5 last:border-0">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium">
-                      {comment.user.username?.[0] || comment.user.email?.[0]?.toUpperCase() || '?'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">
-                          {comment.user.username || comment.user.email}
-                        </span>
-                        <span className="text-sm text-gray-500">
+                    <UserTag
+                      username={comment.user.username}
+                      avatarUrl={comment.user.avatar_url}
+                      email={comment.user.email}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-xs text-gray-500">
                           {formatDistanceToNow(new Date(comment.created_at), { locale: zhCN, addSuffix: true })}
                         </span>
                       </div>
@@ -646,15 +642,15 @@ export default function NoteDetailPage() {
                       {comment.replies && comment.replies.length > 0 && (
                         <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-100">
                           {comment.replies.map((reply) => (
-                            <div key={reply.id} className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 text-sm font-medium">
-                                {reply.user.username?.[0] || reply.user.email?.[0]?.toUpperCase() || '?'}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-gray-900 text-sm">
-                                    {reply.user.username || reply.user.email}
-                                  </span>
+                            <div key={reply.id} className="flex items-start gap-2">
+                              <UserTag
+                                username={reply.user.username}
+                                avatarUrl={reply.user.avatar_url}
+                                email={reply.user.email}
+                                className="flex-1"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-1">
                                   <span className="text-xs text-gray-500">
                                     {formatDistanceToNow(new Date(reply.created_at), { locale: zhCN, addSuffix: true })}
                                   </span>

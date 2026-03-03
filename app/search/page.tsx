@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { getSupabase } from '@/lib/supabase';
-import { getAllTags } from '@/lib/utils';
 import Link from 'next/link';
 import type { QuestionWithTags } from '@/types';
 import type { SearchHistory } from '@/types';
@@ -18,6 +17,7 @@ export default function SearchPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userClassIds, setUserClassIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -49,16 +49,16 @@ export default function SearchPage() {
       const supabase = getSupabase();
 
       // 获取用户加入的班级ID列表
-      let userClassIds: string[] = [];
       try {
         const { data: classMembers } = await supabase
           .from('class_members')
           .select('class_id')
           .eq('user_id', user.id)
           .eq('status', 'approved');
-        userClassIds = classMembers?.map((c: any) => c.class_id) || [];
+        setUserClassIds(classMembers?.map((c: any) => c.class_id) || []);
       } catch (err) {
         // 表可能还不存在，忽略
+        setUserClassIds([]);
       }
 
       // 管理员可以查看所有题目，普通用户只能查看自己班级的题目或公开题目

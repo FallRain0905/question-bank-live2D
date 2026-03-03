@@ -171,6 +171,8 @@ export interface Class {
   description: string | null;
   invite_code: string;
   creator_id: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  reject_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -188,4 +190,20 @@ export interface ClassMember {
 export interface ClassWithRole extends Class {
   userRole?: 'creator' | 'moderator' | 'member';
   userStatus?: 'pending' | 'approved' | 'rejected';
+}
+
+// 班级审核申请类型
+export interface ClassApprovalRequest {
+  id: string;
+  class_id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  invite_code: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reject_reason: string | null;
+  message: string | null;
+  requested_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
 }

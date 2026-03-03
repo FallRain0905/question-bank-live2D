@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase';
+import type { Class } from '@/types';
+
+interface ExistingMember {
+  status: 'pending' | 'approved' | 'rejected';
+}
 
 // POST - 通过邀请码申请加入班级
 export async function POST(request: NextRequest) {
@@ -41,13 +46,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '邀请码无效' }, { status: 404 });
     }
 
+    const classInfo = classData as Class;
+
     // 检查是否已经有待审核或已批准的记录
     const { data: existingMember } = await supabase
       .from('class_members')
       .select('status')
-      .eq('class_id', classData.id)
+      .eq('class_id', classInfo.id)
       .eq('user_id', user.id)
-      .maybeSingle();
+      .maybeSingle() as { data: ExistingMember | null };
 
     if (existingMember) {
       if (existingMember.status === 'approved') {
@@ -60,8 +67,9 @@ export async function POST(request: NextRequest) {
     // 插入加入申请（状态为 pending）
     const { error: insertError } = await supabase
       .from('class_members')
+      // @ts-ignore - Supabase types not inferring correctly
       .insert({
-        class_id: classData.id,
+        class_id: classInfo.id,
         user_id: user.id,
         role: 'member',
         status: 'pending',
@@ -74,9 +82,9 @@ export async function POST(request: NextRequest) {
       success: true,
       message: '申请已提交，等待班级管理员审核',
       class: {
-        id: classData.id,
-        name: classData.name,
-        description: classData.description,
+        id: classInfo.id,
+        name: classInfo.name,
+        description: classInfo.description,
       }
     });
   } catch (error: any) {

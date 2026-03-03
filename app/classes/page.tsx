@@ -73,33 +73,66 @@ export default function ClassesPage() {
     setLoading(true);
     try {
       const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from('class_members')
-        .select(`
-          class_id,
-          role,
-          status,
-          classes (
-            id,
-            name,
-            description,
-            invite_code,
-            creator_id,
-            created_at
-          )
-        `)
-        .eq('user_id', user.id);
 
-      if (error) {
-        console.error('获取班级列表失败:', error);
+      // 1. 查询用户的班级成员记录（已批准的）
+      const { data: members, error: membersError } = await supabase
+        .from('class_members')
+        .select('class_id, role, status')
+        .eq('user_id', user.id)
+        .eq('status', 'approved');
+
+      if (membersError) {
+        console.error('查询 class_members 失败:', membersError.message, membersError);
         setClasses([]);
-      } else {
-        setClasses(data?.map((c: any) => ({
-          ...c.classes,
-          userRole: c.role,
-          userStatus: c.status,
-        })) || []);
+        return;
       }
+
+      let resultClasses: ClassWithRole[] = [];
+
+      // 2. 获取已批准的班级信息
+      if (members && members.length > 0) {
+        const classIds = members.map(m => m.class_id);
+        const { data: approvedClasses, error: classesError } = await supabase
+          .from('classes')
+          .select('id, name, description, invite_code, creator_id, status, created_at, updated_at')
+          .in('id', classIds)
+          .eq('status', 'approved');
+
+        if (!classesError && approvedClasses) {
+          const classesMap = new Map(approvedClasses.map(c => [c.id, c]));
+          resultClasses = members
+            .map(m => ({
+              ...classesMap.get(m.class_id),
+              userRole: m.role,
+            }))
+            .filter(c => c.id) as ClassWithRole[];
+        }
+      }
+
+      // 3. 查询用户创建的待审核班级
+      const { data: pendingClasses, error: pendingError } = await supabase
+        .from('classes')
+        .select('id, name, description, invite_code, creator_id, status, created_at, updated_at')
+        .eq('creator_id', user.id)
+        .eq('status', 'pending');
+
+      if (!pendingError && pendingClasses && pendingClasses.length > 0) {
+        // 添加待审核班级到结果中（用户角色为 creator）
+        resultClasses = [
+          ...resultClasses,
+          ...pendingClasses.map(c => ({
+            ...c,
+            userRole: 'creator' as const,
+          }))
+        ];
+      }
+
+      // 4. 按创建时间倒序排列
+      resultClasses.sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setClasses(resultClasses);
     } catch (err) {
       console.error('加载班级时出错:', err);
       setClasses([]);
@@ -112,11 +145,11 @@ export default function ClassesPage() {
     setLoadingMembers(true);
     try {
       const supabase = getSupabase();
-      // 获取班级成员（包括待审核的）
       const { data: members, error } = await supabase
         .from('class_members')
         .select('*')
         .eq('class_id', classId)
+        .eq('status', 'approved')
         .order('joined_at', { ascending: true });
 
       if (error) {
@@ -180,21 +213,41 @@ export default function ClassesPage() {
           name: className.trim(),
           description: classDesc.trim() || null,
           creator_id: user.id,
+          status: 'pending',
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      // 创建班级审核请求记录（供管理员查看和审核）
+      await supabase
+        .from('class_approval_requests')
+        .insert({
+          class_id: data.id,
+          user_id: user.id,
+          name: data.name,
+          description: data.description || '',
+          invite_code: data.invite_code,
+          status: 'pending',
+        });
+
+      // 注意：触发器会自动将创建者添加为班级成员（status = 'approved'）
+      // 不需要手动插入
 
       setClassName('');
       setClassDesc('');
       setShowCreateModal(false);
 
-      await loadClasses();
-      alert(`班级 "${data.name}" 创建成功！\n邀请码: ${data.invite_code}`);
+      alert(`班级 "${data.name}" 创建成功！正在等待超级管理员审核。`);
     } catch (error: any) {
       console.error('创建班级失败:', error);
-      alert('创建失败: ' + error.message);
+      const errorMsg = error?.message || '未知错误';
+      console.error('错误详情:', errorMsg, error?.details, error?.hint);
+      alert('创建失败: ' + errorMsg);
     } finally {
       setCreating(false);
     }
@@ -212,12 +265,11 @@ export default function ClassesPage() {
     setJoining(true);
     try {
       const supabase = getSupabase();
-      const { session } = await supabase.auth.getSession();
 
       // 先查找班级
       const { data: classData, error: classError } = await supabase
         .from('classes')
-        .select('id, name')
+        .select('*')
         .eq('invite_code', inviteCode.trim().toUpperCase())
         .maybeSingle();
 
@@ -225,7 +277,24 @@ export default function ClassesPage() {
         throw new Error('邀请码无效');
       }
 
-      // 插入加入申请（状态为 pending）
+      // 检查班级状态
+      if (classData.status !== 'approved') {
+        throw new Error('该班级还在审核中');
+      }
+
+      // 检查是否已经是班级成员
+      const { data: existingMember } = await supabase
+        .from('class_members')
+        .select('status')
+        .eq('class_id', classData.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingMember && existingMember.status === 'approved') {
+        throw new Error('你已经是该班级成员');
+      }
+
+      // 插入加入申请
       const { error: insertError } = await supabase
         .from('class_members')
         .insert({
@@ -240,49 +309,12 @@ export default function ClassesPage() {
 
       setInviteCode('');
       setShowJoinModal(false);
-
       alert(`已提交加入 "${classData.name}" 的申请，等待班级管理员审核。`);
     } catch (error: any) {
       console.error('加入班级失败:', error);
       setJoinError(error.message || '加入失败，请重试');
     } finally {
       setJoining(false);
-    }
-  };
-
-  const handleApproveMember = async (memberId: string) => {
-    try {
-      const supabase = getSupabase();
-      const { error } = await supabase
-        .from('class_members')
-        .update({ status: 'approved' })
-        .eq('id', memberId);
-
-      if (error) throw error;
-
-      await loadMembers(selectedClass!.id);
-      alert('已批准该成员加入');
-    } catch (error: any) {
-      console.error('批准成员失败:', error);
-      alert('批准失败: ' + error.message);
-    }
-  };
-
-  const handleRejectMember = async (memberId: string) => {
-    try {
-      const supabase = getSupabase();
-      const { error } = await supabase
-        .from('class_members')
-        .update({ status: 'rejected' })
-        .eq('id', memberId);
-
-      if (error) throw error;
-
-      await loadMembers(selectedClass!.id);
-      alert('已拒绝该成员加入');
-    } catch (error: any) {
-      console.error('拒绝成员失败:', error);
-      alert('拒绝失败: ' + error.message);
     }
   };
 
@@ -332,26 +364,6 @@ export default function ClassesPage() {
     }
   };
 
-  const handleChangeRole = async (memberId: string, newRole: string, memberName: string) => {
-    const roleText = newRole === 'moderator' ? '审核员' : '普通成员';
-    if (!confirm(`确定要将 "${memberName}" 设为 ${roleText} 吗？`)) return;
-    try {
-      const supabase = getSupabase();
-      const { error } = await supabase
-        .from('class_members')
-        .update({ role: newRole })
-        .eq('id', memberId);
-
-      if (error) throw error;
-
-      await loadMembers(selectedClass!.id);
-      alert(`已将 ${memberName} 设为 ${roleText}`);
-    } catch (error: any) {
-      console.error('更改角色失败:', error);
-      alert('更改失败: ' + error.message);
-    }
-  };
-
   const openMembersModal = async (cls: ClassWithRole) => {
     setSelectedClass(cls);
     setShowMembersModal(true);
@@ -364,12 +376,12 @@ export default function ClassesPage() {
         <img
           src={member.avatar_url}
           alt={member.username}
-          className="w-10 h-10 rounded-full object-cover"
+          className="w-10 h-10 rounded-full object-cover border-2 border-brand-600"
         />
       );
     }
     return (
-      <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-brand-50 font-medium">
+      <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-brand-50 font-medium border-2 border-brand-600">
         {member.username?.[0]?.toUpperCase() || '?'}
       </div>
     );
@@ -384,7 +396,7 @@ export default function ClassesPage() {
       case 'rejected':
         return <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">已拒绝</span>;
       default:
-        return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">{status}</span>;
+        return <span className="px-2 py-1 text-xs bg-brand-100 text-brand-300 rounded-full">{status}</span>;
     }
   };
 
@@ -395,7 +407,7 @@ export default function ClassesPage() {
       case 'moderator':
         return <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">审核员</span>;
       default:
-        return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">成员</span>;
+        return <span className="px-2 py-1 text-xs bg-brand-100 text-brand-300 rounded-full">成员</span>;
     }
   };
 
@@ -423,28 +435,29 @@ export default function ClassesPage() {
   return (
     <div className="min-h-[calc(100vh-64px)] bg-brand-950">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-brand-50">我的班级</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="px-4 py-2 bg-brand-800 text-brand-200 border border-brand-700 rounded-lg hover:border-brand-500 transition-colors"
-            >
-              加入班级
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-brand-500 text-brand-50 rounded-lg hover:bg-brand-400 transition-colors"
-            >
-              创建班级
-            </button>
-          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="px-4 py-2 bg-brand-800 text-brand-200 border border-brand-700 rounded-lg hover:border-brand-500 transition-colors"
+          >
+            加入班级
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-brand-500 text-brand-50 rounded-lg hover:bg-brand-400 transition-colors"
+          >
+            创建班级
+          </button>
         </div>
 
         {classes.length === 0 ? (
-          <div className="bg-brand-800/50 border border-brand-700/50 rounded-xl p-12 text-center">
+          <div className="bg-brand-800/50 border border-brand-700/50 rounded-xl p-12 text-center mt-6">
             <div className="text-6xl mb-4">📚</div>
-            <h2 className="text-xl font-medium text-brand-100 mb-2">还没有加入任何班级</h2>
+            <h2 className="text-xl font-medium text-brand-200 mb-2">还没有加入任何班级</h2>
             <p className="text-brand-400 mb-6">创建班级或使用邀请码加入现有班级</p>
             <div className="flex justify-center gap-4">
               <button
@@ -462,45 +475,69 @@ export default function ClassesPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {classes.map((cls) => (
-              <div
-                key={cls.id}
-                className="bg-brand-800/50 border border-brand-700/50 rounded-xl p-6"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-brand-50 mb-1">{cls.name}</h3>
-                    {cls.description && (
-                      <p className="text-brand-400 mb-3">{cls.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-brand-500">
-                      <span>邀请码: <code className="bg-brand-900 px-2 py-1 rounded text-brand-200">{cls.invite_code}</code></span>
-                      <span>创建于 {new Date(cls.created_at).toLocaleDateString()}</span>
-                      {cls.userRole && getRoleBadge(cls.userRole)}
+          <div className="space-y-4 mt-6">
+            {classes.map((cls) => {
+              const isPending = cls.status === 'pending';
+              return (
+                <div
+                  key={cls.id}
+                  className={`bg-brand-800/50 border border rounded-xl p-6 ${
+                    isPending ? 'border-yellow-700/50' : 'border-brand-700/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-medium text-brand-50">{cls.name}</h3>
+                        {isPending ? (
+                          <span className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-full">待审核</span>
+                        ) : (
+                          <span className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full">已通过</span>
+                        )}
+                      </div>
+                      {isPending && (
+                        <p className="text-yellow-400 text-sm mb-3">⚠️ 班级正在审核中，审核通过后方可正常使用</p>
+                      )}
+                      {cls.description && (
+                        <p className="text-brand-400 mb-3">{cls.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 text-sm text-brand-500">
+                        <span>邀请码: <code className="bg-brand-900 px-2 py-1 rounded text-brand-200">{cls.invite_code}</code></span>
+                        {!isPending && (cls.userRole === 'creator' || cls.userRole === 'moderator') && (
+                          <span className="text-brand-400 text-xs ml-2">
+                            · {cls.userRole === 'creator' ? '管理员' : '审核员'}
+                          </span>
+                        )}
+                        <span className="text-brand-400 text-xs ml-2">
+                          创建于 {new Date(cls.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {!isPending && (cls.userRole === 'creator' || cls.userRole === 'moderator') && (
+                        <button
+                          onClick={() => openMembersModal(cls)}
+                          className="px-4 py-2 bg-brand-700 text-brand-200 rounded-lg hover:bg-brand-600 transition-colors text-sm"
+                        >
+                          管理成员
+                        </button>
+                      )}
+                      {!isPending && cls.userRole !== 'creator' && (
+                        <button
+                          onClick={() => handleLeaveClass(cls.id, cls.name)}
+                          className="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors text-sm"
+                        >
+                          退出班级
+                        </button>
+                      )}
+                      {isPending && (
+                        <span className="px-4 py-2 text-sm text-brand-500">等待审核</span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    {(cls.userRole === 'creator' || cls.userRole === 'moderator') && (
-                      <button
-                        onClick={() => openMembersModal(cls)}
-                        className="px-4 py-2 bg-brand-700 text-brand-200 rounded-lg hover:bg-brand-600 transition-colors text-sm"
-                      >
-                        管理成员
-                      </button>
-                    )}
-                    {cls.userRole !== 'creator' && (
-                      <button
-                        onClick={() => handleLeaveClass(cls.id, cls.name)}
-                        className="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors text-sm"
-                      >
-                        退出班级
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -510,6 +547,11 @@ export default function ClassesPage() {
         <div className="fixed inset-0 bg-brand-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-brand-800 border border-brand-700 rounded-xl max-w-md w-full p-6">
             <h2 className="text-xl font-bold text-brand-50 mb-4">创建新班级</h2>
+            <div className="bg-brand-700/30 border border-brand-700/50 rounded-lg p-3 mb-4">
+              <p className="text-sm text-brand-300">
+                ⚠️ 新创建的班级需要超级管理员审核后才能正常使用。
+              </p>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-brand-200 mb-2">
@@ -549,9 +591,8 @@ export default function ClassesPage() {
               <button
                 onClick={handleCreateClass}
                 className="px-4 py-2 bg-brand-500 text-brand-50 rounded-lg hover:bg-brand-400 transition-colors disabled:bg-brand-800 disabled:text-brand-500"
-                disabled={creating}
               >
-                {creating ? '创建中...' : '创建'}
+                {creating ? '创建中...' : '提交审核'}
               </button>
             </div>
           </div>
@@ -613,7 +654,6 @@ export default function ClassesPage() {
               <button
                 onClick={handleJoinClass}
                 className="px-4 py-2 bg-brand-500 text-brand-50 rounded-lg hover:bg-brand-400 transition-colors disabled:bg-brand-800 disabled:text-brand-500"
-                disabled={joining}
               >
                 {joining ? '提交申请...' : '提交申请'}
               </button>
@@ -643,7 +683,7 @@ export default function ClassesPage() {
                 <p className="text-brand-400">加载中...</p>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto">
                 {members.length === 0 ? (
                   <p className="text-center text-brand-500 py-8">暂无成员</p>
                 ) : (
@@ -674,29 +714,15 @@ export default function ClassesPage() {
                               💬
                             </button>
                           )}
-                          {member.status === 'pending' && (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleApproveMember(member.id)}
-                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                              >
-                                批准
-                              </button>
-                              <button
-                                onClick={() => handleRejectMember(member.id)}
-                                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                              >
-                                拒绝
-                              </button>
-                            </div>
+                          {(selectedClass.userRole === 'creator' || selectedClass.userRole === 'moderator') && (
+                            <button
+                              onClick={() => handleRemoveMember(member.id, member.username)}
+                              className="text-red-400 hover:text-red-300 p-2 hover:bg-red-900/30 rounded-lg transition-colors"
+                              title="移除成员"
+                            >
+                              🗑️
+                            </button>
                           )}
-                          <button
-                            onClick={() => handleRemoveMember(member.id, member.username)}
-                            className="text-red-400 hover:text-red-300 p-2 hover:bg-red-900/30 rounded-lg transition-colors"
-                            title="移除成员"
-                          >
-                            🗑️
-                          </button>
                         </div>
                       </div>
                     ))}
