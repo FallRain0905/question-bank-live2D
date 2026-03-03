@@ -15,7 +15,52 @@ export interface Theme {
     900: string;
     950: string;
   };
+  imageUrl?: string;
 }
+
+export interface ImageTheme {
+  id: string;
+  name: string;
+  imageUrl: string;
+  colors: Theme['colors'];
+}
+
+export interface CustomThemeColors {
+  50?: string;
+  100?: string;
+  200?: string;
+  300?: string;
+  400?: string;
+  500?: string;
+  600?: string;
+  700?: string;
+  800?: string;
+  900?: string;
+  950?: string;
+}
+
+// 默认自定义配色
+export const DEFAULT_CUSTOM_COLORS = {
+  50: '#F0F9FF',
+  100: '#E0F2FE',
+  200: '#BAE6FD',
+  300: '#7DD3FC',
+  400: '#38BDF8',
+  500: '#0EA5E9',
+  600: '#0284C7',
+  700: '#0369A1',
+  800: '#075985',
+  900: '#0C4A6E',
+  950: '#082F49',
+};
+
+// 默认图片主题
+const DEFAULT_IMAGE_THEME: ImageTheme = {
+  id: 'image',
+  name: '图片主题',
+  imageUrl: '',
+  colors: DEFAULT_CUSTOM_COLORS,
+};
 
 export const themes: Record<string, Theme> = {
   // 保留原有的两个主题
@@ -105,16 +150,51 @@ export const themes: Record<string, Theme> = {
       950: '#2E1065',
     },
   },
+  // 图片主题（用于存储用户上传的图片）
+  image: DEFAULT_IMAGE_THEME,
 };
 
-// 默认主题
+// 默认主题（自定义颜色）
 export const DEFAULT_THEME = 'a';
 
 // 获取当前主题
-export function getCurrentTheme(): Theme {
+export function getCurrentTheme(): Theme | ImageTheme {
   if (typeof window === 'undefined') return themes[DEFAULT_THEME];
   const saved = localStorage.getItem('theme');
+
+  if (saved === 'image') {
+    const imageTheme = getImageTheme();
+    return imageTheme;
+  }
+
   return themes[saved || DEFAULT_THEME] || themes[DEFAULT_THEME];
+}
+
+// 获取自定义主题颜色
+export function getCustomThemeColors(): CustomThemeColors {
+  if (typeof window === 'undefined') return DEFAULT_CUSTOM_COLORS;
+  const saved = localStorage.getItem('customThemeColors');
+  return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_COLORS;
+}
+
+// 获取图片主题
+export function getImageTheme(): ImageTheme {
+  if (typeof window === 'undefined') return DEFAULT_IMAGE_THEME;
+  const saved = localStorage.getItem('imageTheme');
+  return saved ? JSON.parse(saved) : DEFAULT_IMAGE_THEME;
+}
+
+// 保存自定义主题颜色
+export function saveCustomThemeColors(colors: CustomThemeColors): void {
+  if (typeof window === 'undefined') return;
+  const mergedColors = { ...DEFAULT_CUSTOM_COLORS, ...colors };
+  localStorage.setItem('customThemeColors', JSON.stringify(mergedColors));
+}
+
+// 保存图片主题
+export function saveImageTheme(imageTheme: ImageTheme): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('imageTheme', JSON.stringify(imageTheme));
 }
 
 // 设置当前主题
@@ -126,18 +206,46 @@ export function setCurrentTheme(themeId: string): void {
 
 // 应用主题到页面
 export function applyTheme(themeId: string): void {
-  const theme = themes[themeId];
+  let theme: Theme | ImageTheme;
+
+  if (themeId === 'image') {
+    theme = getImageTheme();
+  } else {
+    theme = themes[themeId];
+  }
+
   if (!theme) return;
 
   const root = document.documentElement;
+  const body = document.body;
 
-  // 移除所有旧的主题类
+  // 移除所有主题类
   Object.keys(themes).forEach(key => {
     root.classList.remove(`theme-${key}`);
   });
+  root.classList.remove('theme-custom', 'theme-image');
+  body.classList.remove('theme-image-bg');
 
   // 添加新主题类
-  root.classList.add(`theme-${themeId}`);
+  if (themeId === 'image') {
+    root.classList.add('theme-image');
+    body.classList.add('theme-image-bg');
+  } else if (themeId === 'custom') {
+    root.classList.add('theme-custom');
+  } else {
+    root.classList.add(`theme-${themeId}`);
+  }
+
+  // 设置背景图片（带虚化效果）
+  if (theme.imageUrl) {
+    root.style.backgroundImage = `url(${theme.imageUrl})`;
+    root.style.backgroundSize = 'cover';
+    root.style.backgroundPosition = 'center';
+    root.style.backgroundAttachment = 'fixed';
+  } else {
+    root.style.backgroundImage = '';
+    root.style.backgroundAttachment = '';
+  }
 
   // 设置 CSS 变量
   root.style.setProperty('--brand-50', theme.colors[50]);

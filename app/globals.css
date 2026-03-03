@@ -143,3 +143,23 @@ html {
     text-wrap: balance;
   }
 }
+
+/* 图片主题背景样式 - 为有背景图片的页面添加覆盖层 */
+body.theme-image-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 当使用图片主题时，让body保持透明 */
+body.theme-image-bg {
+  background: transparent !important;
+}
