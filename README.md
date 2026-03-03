@@ -1,233 +1,272 @@
-# Question Bank
+# 题库系统 - 学习共享平台
 
-一个基于 Next.js 和 Supabase 构建的在线题库与学习笔记分享平台。
+> 一个支持题目和笔记上传、分享、讨论的在线学习社区
 
-## 功能特性
+[![Next.js](https://img.shields.io/badge/Next.js-15.1.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-3E88C6?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![React](https://img.shields.io/badge/React-19.0.0-black?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-black?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
-### 题目管理
-- **多种格式支持**：支持文本、图片、PDF、DOCX 等多种格式的题目上传
-- **文档解析**：自动解析 PDF 和 DOCX 文档内容
-- **AI 辅助**：集成 AI 解析题目和生成答案
-- **答案配对**：支持将题目与答案进行智能配对
-- **标签分类**：通过标签对题目进行分类管理
+## 📖 项目介绍
 
-### 学习笔记
-- **笔记分享**：上传和分享学习笔记
-- **图文混排**：支持图文结合的笔记内容
-- **文档附件**：支持上传 PDF、DOCX 等文档附件
-- **点赞收藏**：点赞和收藏喜欢的笔记
+这是一个面向学习者的在线题库与笔记共享平台，用户可以：
+- 上传和分享题目与学习笔记
+- 浏览和搜索题库内容
+- 通过标签分类管理学习资源
+- 参与社区互动（评论、关注、收藏）
+- 创建和加入班级进行协作学习
+- 自定义网站配色主题
 
-### 社交互动
-- **用户关注**：关注其他用户，构建学习社区
-- **评论回复**：对题目和笔记进行评论和回复
-- **收藏功能**：收藏感兴趣的题目和笔记
-- **通知系统**：实时接收关注、评论、点赞等通知
+## ✨ 主要功能
 
-### 班级系统
-- **班级创建**：创建学习班级，邀请同学加入
-- **班级管理**：设置管理员，管理班级成员
-- **班级内容**：班级内分享专属题目和笔记
-- **邀请码**：通过邀请码快速加入班级
-- **班级审核**：新创建的班级需要超级管理员审核后才能对其他用户可见
+### 📚 题库功能
+- 题目上传：支持文本、图片、PDF/Word 文档上传
+- 智能解析：自动解析题目中的数学公式（使用 KaTeX）
+- 标签管理：自定义标签分类题目
+- 收藏功能：收藏喜欢的题目
+- 评论互动：发表评论和回复讨论
 
-#### 审核机制
-用户创建班级时状态为 `pending`，超级管理员审核后状态变为 `approved`。班级创建者自动成为该班级成员（状态为 `approved`）。
+### 📝 笔记功能
+- 笔记上传：支持多种格式文档
+- 文件预览：在线预览多种文件类型
+- 点赞互动：喜欢作者的笔记
+- 收藏管理：分类收藏学习资料
 
-### 管理功能
-- **内容审核**：管理员审核用户提交的题目和笔记
-- **标签管理**：管理题目标签体系
-- **公告发布**：发布平台公告
-- **用户管理**：查看和管理用户信息
+### 💬 社区互动
+- 评论系统：支持主评论和回复嵌套
+- 关注作者：关注感兴趣的内容创作者
+- 消息通知：实时接收互动通知
+- 社交动态：发现热门内容和活跃用户
 
-### 搜索功能
-- **全文搜索**：搜索题目、笔记内容
-- **标签筛选**：按标签筛选内容
-- **搜索历史**：保存用户搜索记录
+### 🎓 班级协作
+- 创建班级：创建学习班级并管理成员
+- 班级审核：管理员审核班级创建申请
+- 成员管理：添加、移除班级成员
+- 班级专属：班级内专属的学习资源
 
-### 其他功能
-- **LaTeX 公式渲染**：使用 KaTeX 渲染数学公式
-- **文档预览下载**：支持文档在线预览和下载
-- **响应式设计**：适配桌面和移动设备
-- **用户资料**：自定义用户头像和昵称
+### 🎨 界面特性
+- 🎨 多彩主题：6 种精选配色方案可切换
+  - 深蓝商务
+  - 紫罗兰
+  - 清新薄荷
+  - 暖橙夕照
+  - 梦幻天空
+  - 春日花园
+- 📱 响应式设计：完美适配桌面端和移动端
+- ✨ 流畅动画：使用 Framer Motion 实现优雅动效
+- 🌙 深色模式：自动适配系统主题
 
-## 技术栈
+## 🛠 技术栈
 
 ### 前端
-- **Next.js 15.1.3**：React 框架，App Router
-- **React 19**：用户界面库
-- **TypeScript**：类型安全
-- **Tailwind CSS**：样式框架
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Next.js | 15.1.3 | React 全栈框架 |
+| React | 19.0.0 | UI 库 |
+| TypeScript | 5.0 | 类型安全 |
+| Tailwind CSS | 3.4.1 | 原子框架 |
+| Framer Motion | 12.34.3 | 动画库 |
+| date-fns | 4.1.0 | 日期处理 |
+| KaTeX | 0.16.28 | 数学公式渲染 |
+| Mammoth | 1.11.0 | Word 文档解析 |
 
-### 后端
-- **Supabase**：后端即服务
-  - PostgreSQL 数据库
-  - 用户认证
-  - 文件存储
-  - 实时订阅
+### 后端/数据库
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Supabase | - | BaaS 服务提供商 |
+| PostgreSQL | - | 关系型数据库 |
 
-### 第三方库
-- **KaTeX**：LaTeX 公式渲染
-- **mammoth**：DOCX 文档解析
-- **pdf-parse**：PDF 文档解析
-- **date-fns**：日期处理
-- **pdfjs-dist**：PDF 预览
+### 样式工具
+- PostCSS：CSS 转换工具
+- Autoprefixer：自动添加浏览器前缀
 
-## 快速开始
+## 📁 项目结构
+
+```
+question-bank/
+├── app/                    # Next.js 应用页面
+│   ├── admin/            # 管理员页面
+│   │   ├── classes/    # 班级审核
+│   │   ├── tags/       # 标签管理
+│   │   └── announcements/ # 公告管理
+│   ├── classes/          # 班级管理
+│   ├── login/           # 登录/注册
+│   ├── me/              # 个人中心
+│   ├── notes/           # 笔记相关
+│   ├── notifications/    # 消息通知
+│   ├── parse/           # 文档转换工具
+│   ├── questions/        # 题库详情
+│   ├── search/          # 搜索页
+│   ├── social/          # 社区动态
+│   ├── upload/          # 资源上传
+│   └── users/           # 用户主页
+├── components/           # 可复用组件
+│   ├── Navbar.tsx      # 导航栏（含主题切换）
+│   ├── Footer.tsx      # 页脚
+│   ├── UserAvatar.tsx  # 用户头像组件
+│   └── ...
+├── lib/                 # 工具函数
+│   ├── supabase.ts      # Supabase 客户端封装
+│   ├── theme.ts         # 主题配置系统
+│   ├── upload.ts        # 文件上传处理
+│   └── ...
+├── supabase/           # 数据库 SQL 脚本
+│   ├── schema.sql       # 基础表结构
+│   ├── notes_schema.sql # 笔记表定义
+│   ├── class_system.sql # 班级系统表
+│   └── ...
+├── public/              # 静态资源
+├── types/               # TypeScript 类型定义
+└── 配置文件...
+```
+
+## 🚀 快速开始
 
 ### 环境要求
-- Node.js 18 或更高版本
-- npm 或 yarn
+
+- Node.js >= 18.x
+- npm 或 yarn 或 pnpm
 
 ### 安装依赖
+
 ```bash
 npm install
+# 或
+yarn install
+# 或
+pnpm install
 ```
 
 ### 配置环境变量
-创建 `.env.local` 文件并配置以下内容：
+
+在项目根目录创建 `.env.local` 文件：
+
 ```env
-NEXT_PUBLIC_SUPABASE_URL=你的_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=你的_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=你的_Supabase_Project_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=你的_Supabase_Anon_Key
 ```
 
-### 数据库初始化
-在 Supabase SQL Editor 中按顺序执行以下 SQL 文件：
+### 运行开发服务器
 
-1. `supabase/schema.sql` - 基础表结构
-2. `supabase/notes_schema.sql` - 笔记相关表
-3. `supabase/class_system.sql` - 班级系统表
-4. `supabase/social_circle.sql` - 社交功能表
-5. `supabase/admin_features.sql` - 管理功能表
-6. `supabase/new_features.sql` - 新功能（评论、收藏、通知等）
-7. `supabase/add_question_files.sql` - 题目文档字段
-
-**注意：** 如果已执行过 `class_system.sql`，在启用班级审核功能前需要执行以下修复文件：
-
-- `supabase/fix_trigger_insert.sql` - 修复触发器歧义问题
-- `supabase/fix_classes_policy_v3.sql` - 简化 RLS 策略
-- `supabase/fix_function.sql` - 修复辅助函数
-
-执行后重启开发服务器清除 schema 缓存。
-
-#### 班级审核相关修复
-| 文件 | 说明 |
-|------|------|
-| `supabase/class_approval_fixed.sql` | 班级审核功能（状态列 + RLS 策略）|
-| `supabase/class_visibility_fixed.sql` | 班级可见性控制 |
-| `supabase/fix_trigger_insert.sql` | 修复触发器 INSERT 歧义 |
-| `supabase/fix_classes_policy_v3.sql` | 简化 RLS 策略 |
-| `supabase/fix_function.sql` | 修复辅助函数 |
-
-#### 已解决的技术问题
-
-**1. RLS 策略递归问题**
-- **错误信息**：`infinite recursion detected in policy for relation "class_members"`
-- **解决方案**：将管理员检查改为使用 `classes` 表，避免子查询引用自身表
-
-**2. 列名歧义问题**
-- **错误信息**：`column reference "creator_id" is ambiguous`
-- **解决方案**：
-  - RLS 策略中使用表名前缀：`classes.creator_id`
-  - 触发器 INSERT 语句中明确所有列对应关系
-
-**3. Schema Cache 问题**
-- **错误信息**：`Could not find 'status' column of 'classes' in schema cache`
-- **解决方案**：执行 SQL 迁移后重启开发服务器
-
-### 本地开发
 ```bash
 npm run dev
+# 或
+yarn dev
+# 或
+pnpm dev
 ```
 
 访问 [http://localhost:3000](http://localhost:3000)
 
-### 生产构建
+### 构建生产版本
+
 ```bash
 npm run build
 npm start
 ```
 
-## 项目结构
+## 📊 数据库配置
 
+### 执行 SQL 脚本
+
+在 [Supabase Dashboard](https://supabase.com/dashboard) 的 SQL Editor 中按顺序执行以下脚本：
+
+1. `schema.sql` - 基础表结构
+2. `notes_schema.sql` - 笔记相关表
+3. `class_system.sql` - 班级系统表
+4. `ultimate_fix.sql` - 完整的 RLS 策略配置（整合所有修复）
+
+### 核心表说明
+
+| 表名 | 说明 |
+|-------|------|
+| `auth.users` | 用户认证表 |
+| `user_profiles` | 用户公开信息 |
+| `questions` | 题库 |
+| `notes` | 笔记 |
+| `comments` | 评论 |
+| `likes` | 点赞 |
+| `favorites` | 收藏 |
+| `follows` | 关注 |
+| `tags` | 标签 |
+| `classes` | 班级 |
+| `class_members` | 班级成员 |
+| `class_approval_requests` | 班级审核申请 |
+| `notifications` | 消息通知 |
+
+## 🎨 主题系统
+
+项目内置 6 种精心设计的配色方案，可通过导航栏的调色板图标随时切换：
+
+| ID | 名称 | 主色调 | 适用场景 |
+|----|------|--------|----------|
+| a | 深蓝商务 | 蓝色系 | 商务专业 |
+| b | 紫罗兰 | 紫粉色系 | 温柔浪漫 |
+| c | 清新薄荷 | 靛绿色系 | 清新活力 |
+| d | 暖橙夕照 | 橙粉色系 | 温暖亲和 |
+| e | 梦幻天空 | 蓝天色系 | 轻盈明亮 |
+| f | 春日花园 | 粉黄绿色系 | 自然和谐 |
+
+主题设置会自动保存到浏览器本地存储，刷新页面后保持选中状态。
+
+## 👥 权限系统
+
+### RLS 策略
+项目采用 Supabase Row Level Security (RLS) 实现数据安全隔离：
+
+- **已认证用户**：可查看公开内容
+- **内容所有者**：可编辑/删除自己的内容
+- **超级管理员**：拥有全部管理权限
+
+### 超级管理员邮箱
+在 `supabase/ultimate_fix.sql` 中配置：
+
+```sql
+admin_emails TEXT[] := ARRAY['3283254551@qq.com'];
 ```
-question-bank/
-├── app/                    # Next.js App Router 页面
-│   ├── admin/             # 管理后台
-│   ├── api/               # API 路由
-│   ├── classes/           # 班级管理
-│   ├── login/             # 登录页面
-│   ├── me/                # 个人中心
-│   ├── notes/             # 笔记相关
-│   ├── parse/             # 文档解析
-│   ├── questions/         # 题目相关
-│   ├── search/            # 搜索页面
-│   ├── social/            # 社交圈
-│   └── users/             # 用户页面
-├── components/            # React 组件
-│   └── Navbar.tsx         # 导航栏
-├── lib/                   # 工具库
-│   ├── document-parser.ts # 文档解析
-│   ├── supabase.ts        # Supabase 客户端
-│   ├── upload.ts          # 文件上传
-│   └── utils.ts           # 工具函数
-├── types/                 # TypeScript 类型定义
-│   └── index.ts           # 数据库类型
-├── supabase/              # 数据库脚本
-│   ├── schema.sql         # 基础表结构
-│   ├── notes_schema.sql   # 笔记表
-│   ├── class_system.sql   # 班级表
-│   ├── social_circle.sql   # 社交表
-│   ├── admin_features.sql # 管理功能
-│   ├── new_features.sql   # 新功能
-│   └── add_question_files.sql # 文档字段
-└── public/                # 静态资源
-```
 
-## 部署
+修改此数组可添加更多管理员邮箱。
 
-### 部署到服务器
-1. 克隆代码到服务器
+## 📝 开发说明
+
+### 代码规范
+- 使用 TypeScript 进行类型检查
+- 遵循 ESLint 规则
+- 组件采用函数式声明
+
+### 提交规范
 ```bash
-git clone https://gitee.com/FallRain0905/question-bank.git
-cd question-bank
+git add .
+git commit -m "描述变更"
 ```
 
-2. 安装依赖
-```bash
-npm install
-```
+### 分支策略
+- `main` - 主分支，生产环境
+- `dev` - 开发分支
 
-3. 配置环境变量
-```bash
-cp .env.local.example .env.local
-# 编辑 .env.local 填入 Supabase 配置
-```
+## 🐛 常见问题
 
-4. 构建项目
-```bash
-npm run build
-```
+### Supabase 连接失败
+检查 `.env.local` 文件中的 URL 和 Key 是否正确配置。
 
-5. 使用 PM2 运行
-```bash
-npm install -g pm2
-pm2 start npm --name "question-bank" -- start
-```
+### RLS 策略报错
+确保按顺序执行所有 SQL 脚本，特别是 `ultimate_fix.sql`。
 
-### 更新代码
-```bash
-# 在服务器上
-cd /var/www/question-bank
-git pull origin master
-rm -rf .next
-npm run build
-pm2 restart question-bank
-```
+### 主题切换不生效
+清除浏览器缓存后刷新页面。
 
-## 贡献
+## 📄 许可证
+
+本项目采用 MIT 许可证，详见 [LICENSE](LICENSE) 文件。
+
+## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-## 许可证
+## 📧 维护者
 
-MIT License
+由 Claude 协助开发和维护
+
+---
+
+**祝你学习愉快！** 📚✨
