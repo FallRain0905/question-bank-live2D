@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body>
+      <body className="bg-brand-950 text-brand-100">
         <ThemeProvider>
           <Navbar />
           <AnnouncementBanner />
