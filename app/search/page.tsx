@@ -48,27 +48,20 @@ export default function SearchPage() {
 
       const supabase = getSupabase();
 
-      // 获取用户加入的班级ID列表
-      try {
-        const { data: classMembers } = await supabase
-          .from('class_members')
-          .select('class_id')
-          .eq('user_id', user.id)
-          .eq('status', 'approved');
-        setUserClassIds(classMembers?.map((c: any) => c.class_id) || []);
-      } catch (err) {
-        // 表可能还不存在，忽略
-        setUserClassIds([]);
-      }
+      const { data: classMembers } = await supabase
+        .from('class_members')
+        .select('class_id')
+        .eq('user_id', user.id)
+        .eq('status', 'approved');
+      setUserClassIds(classMembers?.map((c: any) => c.class_id) || []);
 
-      // 管理员可以查看所有题目，普通用户只能查看自己班级的题目或公开题目
       const { data: questionsData, error } = await supabase
         .from('questions')
         .select(`
           *,
           tags (
             id,
-            name
+              name
           )
         `)
         .eq('status', 'approved')
@@ -78,7 +71,6 @@ export default function SearchPage() {
         console.error('获取题目失败:', error);
         setQuestions([]);
       } else {
-        // 获取用户信息用于显示头像和昵称
         const userIds = [...new Set((questionsData || []).map(q => q.user_id))];
         if (userIds.length > 0) {
           const { data: profiles } = await supabase
@@ -99,12 +91,11 @@ export default function SearchPage() {
 
         setQuestions(formattedQuestions);
       }
-    } catch (err) {
-      console.error('加载数据失败:', err);
-      setQuestions([]);
-      setAvailableTags([]);
-    } finally {
+
       setLoading(false);
+    } catch (err) {
+      console.error('加载题库失败:', err);
+      setQuestions([]);
     }
   };
 
@@ -113,6 +104,7 @@ export default function SearchPage() {
     if (!user) return;
 
     const supabase = getSupabase();
+
     const { data } = await supabase
       .from('search_history')
       .select('*')
@@ -127,10 +119,12 @@ export default function SearchPage() {
 
   const saveSearchHistory = async (query: string) => {
     if (!query.trim()) return;
+
     const { data: { user } } = await getSupabase().auth.getUser();
     if (!user) return;
 
     const supabase = getSupabase();
+
     await supabase.from('search_history').insert({
       user_id: user.id,
       query: query.trim(),
@@ -139,76 +133,19 @@ export default function SearchPage() {
     loadSearchHistory();
   };
 
-  const filterQuestions = () => {
-    let filtered = [...questions];
-
-    // 过滤可见性：管理员可以看到全部，普通用户只能看到公开题目或自己班级的题目
-    if (!isAdmin) {
-      filtered = filtered.filter(q =>
-        q.visibility === 'public' || (q.class_id && userClassIds.includes(q.class_id))
-      );
-    }
-
-    if (searchText.trim()) {
-      const lowerSearch = searchText.toLowerCase();
-      filtered = filtered.filter(q =>
-        q.question_text?.toLowerCase().includes(lowerSearch) ||
-        q.answer_text?.toLowerCase().includes(lowerSearch)
-      );
-    }
-
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter(q =>
-        selectedTags.every(tag =>
-          q.tags?.some((t: any) => t.name === tag)
-        )
-      );
-    }
-
-    // 排序
-    switch (sortBy) {
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        break;
-      case 'popular':
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-    }
-
-    setFilteredQuestions(filtered);
-  };
-
-  const toggleTag = (tagName: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tagName)
-        ? prev.filter(t => t !== tagName)
-        : [...prev, tagName]
-    );
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-    if (value.trim()) {
-      saveSearchHistory(value);
-      setShowHistory(false);
-    }
-  };
-
-  const handleHistoryClick = (query: string) => {
-    setSearchText(query);
-    setShowHistory(false);
-  };
-
   const clearHistory = async () => {
     const { data: { user } } = await getSupabase().auth.getUser();
     if (!user) return;
 
     const supabase = getSupabase();
+
     await supabase.from('search_history').delete().eq('user_id', user.id);
     setSearchHistory([]);
+  };
+
+  const handleHistoryClick = (query: string) => {
+    setSearchText(query);
+    setShowHistory(false);
   };
 
   const getUserAvatar = (question: QuestionWithTags) => {
@@ -222,7 +159,8 @@ export default function SearchPage() {
         />
       );
     }
-    const displayName = profile?.username || profile?.email?.[0]?.toUpperCase() || '?';
+    const displayName = profile?.username || '用户';
+
     return (
       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-400 flex items-center justify-center text-brand-50 font-medium border-2 border-brand-600">
         {displayName}
@@ -239,10 +177,8 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-brand-950">
-      {/* 搜索栏 */}
       <div className="bg-brand-800/50 backdrop-blur-md border-b border-brand-700 sticky top-16 z-40 px-4 py-2 sm:py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
-          {/* 移动端返回按钮 */}
           <Link href="/" className="flex items-center gap-1 text-brand-300 hover:text-brand-50">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7 7-7 7l5 5-5" />
@@ -250,11 +186,8 @@ export default function SearchPage() {
             <span className="sm:hidden">首页</span>
           </Link>
 
-          {/* 搜索框容器 */}
           <div className="relative flex-1">
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* 搜索输入 */}
-            <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="text"
                 value={searchText}
@@ -271,7 +204,6 @@ export default function SearchPage() {
                 placeholder="搜索题目或答案内容..."
                 className="w-full px-4 py-2.5 bg-brand-900 border border-brand-700 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-brand-100 placeholder-brand-500"
               />
-              {/* 搜索历史 */}
               {showHistory && searchHistory.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-brand-800 border border-brand-700 rounded-xl shadow-lg z-50 overflow-hidden">
                   <div className="p-2 border-b border-brand-700 flex justify-between items-center">
@@ -298,53 +230,48 @@ export default function SearchPage() {
               )}
             </div>
 
-            {/* 排序选项 */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-brand-400">排序:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-3 py-1.5 bg-brand-900 border border-brand-700 rounded-lg text-sm focus:ring-brand-500 outline-none text-brand-200"
+                className="px-3 py-1.5 bg-brand-900 border border-brand-700 rounded-lg text-sm focus:ring-500 outline-none text-brand-200"
               >
                 <option value="newest">最新</option>
                 <option value="oldest">最早</option>
               </select>
             </div>
-          </div>
 
-          {/* 标签筛选 */}
-          {availableTags.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-4 items-center mt-4">
-              <span className="text-sm text-brand-400">标签:</span>
-              <div className="flex flex-wrap gap-2">
-                {hotTags.map(tag => (
+            {availableTags.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-4 items-center mt-4">
+                <span className="text-sm text-brand-400">标签:</span>
+                <div className="flex flex-wrap gap-2">
+                  {hotTags.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-1 text-sm rounded-full transition ${
+                        selectedTags.includes(tag)
+                          ? 'bg-brand-500 text-brand-50'
+                          : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                {selectedTags.length > 0 && (
                   <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    className={`px-3 py-1 text-sm rounded-full transition ${
-                      selectedTags.includes(tag)
-                        ? 'bg-brand-500 text-brand-50'
-                        : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
-                    }`}
+                    onClick={() => setSelectedTags([])}
+                    className="px-3 py-1 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70 rounded-full"
                   >
-                    {tag}
+                    清除
                   </button>
-                ))}
+                )}
               </div>
-              {selectedTags.length > 0 && (
-                <button
-                  onClick={() => setSelectedTags([])}
-                  className="px-3 py-1 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70 rounded-full"
-                >
-                  清除
-                </button>
-              )}
-            </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* 题目列表 */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
           <div className="text-center py-12">
@@ -361,8 +288,6 @@ export default function SearchPage() {
             </p>
           </div>
         ) : (
-          </div>
-
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredQuestions.map((question) => (
               <Link
@@ -371,7 +296,6 @@ export default function SearchPage() {
                 className="block"
               >
                 <div className="bg-brand-800/50 border border-brand-700/50 rounded-xl p-5 hover:border-brand-500/50 hover:bg-brand-700/30 transition-all">
-                  {/* 顶部信息 */}
                   <div className="flex items-start gap-3 mb-4">
                     {getUserAvatar(question)}
                     <div className="flex-1 min-w-0">
@@ -380,8 +304,6 @@ export default function SearchPage() {
                       </p>
                     </div>
                   </div>
-
-                  {/* 题目内容 */}
                   <div className="mb-4">
                     {question.question_file_url && (
                       <div className="mb-2 p-2 bg-brand-700/30 border border-brand-600/50 rounded-lg">
@@ -404,51 +326,11 @@ export default function SearchPage() {
                       />
                     )}
                   </div>
-
-                  {/* 答案预览 */}
-                  {(question.answer_text || question.answer_image_url || question.answer_file_url) && (
-                    <div className="pt-3 border-t border-brand-700/50">
-                      <p className="text-xs text-brand-500 mb-2">答案</p>
-                      {question.answer_file_url && (
-                        <div className="flex items-center gap-2 text-sm text-brand-300">
-                          <span>📄</span>
-                          <span>{question.answer_file_name || '答案文档'}</span>
-                        </div>
-                      )}
-                      {question.answer_text && (
-                        <p className="text-sm text-brand-400 line-clamp-2">
-                          {question.answer_text.substring(0, 100)}...
-                        </p>
-                      )}
-                      {question.answer_image_url && (
-                        <img
-                          src={question.answer_image_url}
-                          alt="答案"
-                          className="mt-2 max-h-32 w-full rounded-lg object-cover opacity-50"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* 标签 */}
-                  {question.tags && question.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-3 border-t border-brand-700/50">
-                      {question.tags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="px-2 py-0.5 text-xs bg-brand-700 text-brand-300 rounded-full"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </Link>
             ))}
           </div>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
 }
