@@ -6,7 +6,7 @@ import { getSupabase, getUserProfiles, getUserDisplayName } from '@/lib/supabase
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
-import { formatFileSize } from '@/lib/upload';
+import { formatFileSize, downloadFile } from '@/lib/upload';
 import type { QuestionWithTags, CommentWithUser } from '@/types';
 import { UserAvatar, UserTag } from '@/components/UserAvatar';
 
@@ -329,6 +329,24 @@ export default function QuestionDetailPage() {
     router.push('/search');
   };
 
+  // 下载题目文档
+  const handleDownloadQuestion = async () => {
+    if (!question?.question_file_url) return;
+    await downloadFile(
+      question.question_file_url,
+      question.question_file_name || '题目文档'
+    );
+  };
+
+  // 下载答案文档
+  const handleDownloadAnswer = async () => {
+    if (!question?.answer_file_url) return;
+    await downloadFile(
+      question.answer_file_url,
+      question.answer_file_name || '答案文档'
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
@@ -414,17 +432,15 @@ export default function QuestionDetailPage() {
                     )}
                   </div>
                 </div>
-                <a
-                  href={question.question_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={handleDownloadQuestion}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-brand-50 rounded-lg text-sm font-medium hover:bg-brand-600 transition"
                 >
                   <span>下载题目文档</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                </a>
+                </button>
               </div>
             )}
 
@@ -461,17 +477,15 @@ export default function QuestionDetailPage() {
                     )}
                   </div>
                 </div>
-                <a
-                  href={question.answer_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={handleDownloadAnswer}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-brand-50 rounded-lg text-sm font-medium hover:bg-green-700 transition"
                 >
                   <span>下载答案文档</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                </a>
+                </button>
               </div>
             )}
 

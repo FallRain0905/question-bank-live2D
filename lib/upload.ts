@@ -142,6 +142,39 @@ export async function deleteFile(path: string, bucket: string = 'files'): Promis
   }
 }
 
+// 下载文件（移动端友好）
+export async function downloadFile(
+  url: string,
+  fileName: string
+): Promise<void> {
+  try {
+    // 使用 fetch 获取文件
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('下载失败');
+    }
+
+    // 获取文件内容为 blob
+    const blob = await response.blob();
+
+    // 创建临时链接并触发下载
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error('下载文件失败:', error);
+    // 降级方案：直接打开链接
+    window.open(url, '_blank');
+  }
+}
+
 // 上传用户头像
 export async function uploadAvatar(
   file: File,

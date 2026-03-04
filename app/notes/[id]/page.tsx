@@ -6,7 +6,7 @@ import { getSupabase, getUserProfiles } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
-import { getFileIcon, formatFileSize } from '@/lib/upload';
+import { getFileIcon, formatFileSize, downloadFile } from '@/lib/upload';
 import type { NoteWithTags, CommentWithUser } from '@/types';
 import { UserAvatar, UserTag } from '@/components/UserAvatar';
 
@@ -392,18 +392,29 @@ export default function NoteDetailPage() {
 
     const supabase = getSupabase();
 
+    // 删除关联的评论
     await supabase
       .from('comments')
       .delete()
       .eq('target_type', 'note')
       .eq('target_id', noteId);
 
+    // 删除笔记
     await supabase
       .from('notes')
       .delete()
       .eq('id', noteId);
 
     router.push('/notes');
+  };
+
+  // 下载笔记文件
+  const handleDownloadNote = async () => {
+    if (!note?.file_url) return;
+    await downloadFile(
+      note.file_url,
+      note.file_name || '笔记文件'
+    );
   };
 
   if (loading) {
@@ -513,14 +524,12 @@ export default function NoteDetailPage() {
                   <p className="text-sm text-gray-500">{formatFileSize(note.file_size)}</p>
                 )}
               </div>
-              <a
-                href={note.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={handleDownloadNote}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
                 下载文件
-              </a>
+              </button>
             </div>
           )}
 

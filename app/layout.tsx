@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import MobileTabBar from "@/components/MobileTabBar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
@@ -27,10 +28,11 @@ export default function RootLayout({
         <ThemeProvider>
           <Navbar />
           <AnnouncementBanner />
-          <main className="min-h-screen">
+          <main className="min-h-screen pb-16 sm:pb-0">
             {children}
           </main>
           <Footer />
+          <MobileTabBar />
         </ThemeProvider>
       </body>
     </html>
