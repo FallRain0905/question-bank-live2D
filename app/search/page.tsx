@@ -166,10 +166,20 @@ export default function SearchPage() {
       );
     }
 
-    // 班级过滤：只显示公开题目或用户所属班级的题目
+    // 可见性过滤：只显示公开题目或用户所属班级的题目
     filtered = filtered.filter(q => {
-      if (q.visibility === 'public') return true;
-      if (q.class_id && userClassIds.includes(q.class_id)) return true;
+      // 如果没有 visibility 字段，默认显示（向后兼容老数据）
+      if (!q.visibility) {
+        return true;
+      }
+      // 如果是公开题目，显示
+      if (q.visibility === 'public') {
+        return true;
+      }
+      // 如果是班级专属题目，检查用户是否属于该班级
+      if (q.visibility === 'class' && q.class_id) {
+        return userClassIds.includes(q.class_id);
+      }
       return false;
     });
 
