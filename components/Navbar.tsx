@@ -457,7 +457,7 @@ export default function Navbar() {
                 </svg>
               </button>
               {dropdownOpen === 'theme' && (
-                <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto bg-brand-800 rounded-xl border border-brand-700 shadow-lg py-2 z-50">
+                <div className="absolute right-0 mt-2 w-[min(20rem,90vw)] max-h-[70vh] overflow-y-auto bg-brand-800 rounded-xl border border-brand-700 shadow-lg py-2 z-50">
                   <div className="px-4 py-2 text-xs text-brand-500 font-medium">选择配色主题</div>
 
                   {/* 自定义主题选项 */}
@@ -505,7 +505,7 @@ export default function Navbar() {
                       animate={{ opacity: 1, height: 'auto' }}
                       className="px-4 pb-4 pt-2 border-t border-brand-700"
                     >
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                         {(['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const).map((level) => (
                           <div key={level}>
                             <label className="text-xs text-brand-500 mb-1 block">{level}</label>
@@ -702,7 +702,7 @@ export default function Navbar() {
                   </button>
 
                   {dropdownOpen === 'user' && (
-                    <div className="absolute right-0 mt-2 w-48 max-w-[calc(100vw-2rem)] bg-brand-800 rounded-xl border border-brand-700 shadow-lg py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-[min(12rem,90vw)] bg-brand-800 rounded-xl border border-brand-700 shadow-lg py-1 z-50">
                       <Link
                         href="/me"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-brand-200 hover:bg-brand-700 transition-colors"
@@ -844,7 +844,7 @@ function Dropdown({
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-brand-800 rounded-xl border border-brand-700 py-1.5 z-50"
+          className="absolute top-full left-0 mt-2 w-[min(14rem,90vw)] bg-brand-800 rounded-xl border border-brand-700 py-1.5 z-50"
         >
           {items.map((item) => (
             <Link
