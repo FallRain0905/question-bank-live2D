@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { UserProfile } from '@/types';
 import { getSupabase, clearSupabaseCache } from '@/lib/supabase';
 import { themes, getCurrentTheme, setCurrentTheme, initTheme, saveCustomThemeColors, getCustomThemeColors, applyTheme, saveImageTheme, getImageTheme, DEFAULT_CUSTOM_COLORS, type Theme, type CustomThemeColors, type ImageTheme } from '@/lib/theme';
