@@ -148,6 +148,54 @@ export default function SearchPage() {
     setShowHistory(false);
   };
 
+  const filterQuestions = () => {
+    let filtered = [...questions];
+
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase();
+      filtered = filtered.filter(q =>
+        q.question_text?.toLowerCase().includes(searchLower) ||
+        q.answer_text?.toLowerCase().includes(searchLower) ||
+        q.question_file_name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(q =>
+        selectedTags.some(tag => q.tags?.some((t: any) => t.name === tag))
+      );
+    }
+
+    // 班级过滤：只显示公开题目或用户所属班级的题目
+    filtered = filtered.filter(q => {
+      if (q.visibility === 'public') return true;
+      if (q.class_id && userClassIds.includes(q.class_id)) return true;
+      return false;
+    });
+
+    if (sortBy === 'newest') {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === 'oldest') {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+
+    setFilteredQuestions(filtered);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchText(query);
+    setShowHistory(false);
+    if (query.trim()) {
+      saveSearchHistory(query);
+    }
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
   const getUserAvatar = (question: QuestionWithTags) => {
     const profile = userProfiles.get(question.user_id);
     if (profile?.avatar_url) {
@@ -269,8 +317,10 @@ export default function SearchPage() {
                   </button>
                 )}
               </div>
+            )}
           </div>
         </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
@@ -322,7 +372,7 @@ export default function SearchPage() {
                       <img
                         src={question.question_image_url}
                         alt="题目"
-                        className="mt-2 max-h-48 w-full rounded-lg object-cover"
+                        className="mt-2 max-h-48 w-full rounded-full object-cover"
                       />
                     )}
                   </div>
@@ -330,7 +380,8 @@ export default function SearchPage() {
               </Link>
             ))}
           </div>
-        </div>
+        )}
       </div>
+    </div>
     );
 }
