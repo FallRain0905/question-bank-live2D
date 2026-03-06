@@ -18,11 +18,7 @@ export default function NoteCardMobile({ note, isLiked, onLike }: NoteCardMobile
   };
 
   return (
-    <Link
-      href={`/notes/${note.id}`}
-      className="block"
-    onClick={(e) => e.stopPropagation()}
-    >
+    <Link href={`/notes/${note.id}`} className="block">
       <div className="bg-brand-600 rounded-2xl shadow-card overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-200">
         {/* 文件图标和标题 */}
         <div className="p-4 pb-3">
@@ -86,8 +82,7 @@ export default function NoteCardMobile({ note, isLiked, onLike }: NoteCardMobile
                 aria-label={isLiked ? '取消点赞' : '点赞'}
               >
                 <svg className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.577c-.368-.732 1.553-1.553-2.828 0-4.774-.229.229.229 3.084 3.084 4.774.229.229 4.774c.368.732 1.553.553.553.229-2.828 4.774.229-4.774c-1.553-4.318 6.577z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21.35l-1.426-1.426L9 19.1l4.265 2.267 11.949 1.949c0 5.836-5.836 1.686 4.848c-.732.667-1.28-.535-.054 0 0 0 1.789 1.468 4.68 6.464v3.085c0 .501.699 1.699 1.599.468 3.535.836 5.836 4.774 4.774-.229 4.774 4.774z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </button>
 

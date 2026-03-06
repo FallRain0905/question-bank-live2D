@@ -360,18 +360,11 @@ export default function ParsePage() {
     setGeneratingAnswers(true);
     try {
       const response = await fetch('/api/ai-generate-answers', {
-      const response = await fetch('/api/ai-generate-answers', {
-        method: 'POST',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
         body: JSON.stringify({
           apiKey: aiApiKey,
-          apiKey: aiApiKey,
           questions: currentResult.questions,
-          questions: currentResult.questions,
-        }),
         }),
       });
 
