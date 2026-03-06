@@ -162,16 +162,33 @@ export async function downloadFile(
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = fileName;
+    link.style.display = 'none'; // 防止显示在页面上
     document.body.appendChild(link);
     link.click();
 
-    // 清理
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
+    // 清理 - 延迟一点确保下载已触发
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    }, 100);
   } catch (error) {
     console.error('下载文件失败:', error);
-    // 降级方案：直接打开链接
-    window.open(url, '_blank');
+    // 降级方案1：直接打开链接
+    const fallbackLink = document.createElement('a');
+    fallbackLink.href = url;
+    fallbackLink.target = '_blank';
+    fallbackLink.download = fileName;
+    document.body.appendChild(fallbackLink);
+    fallbackLink.click();
+    setTimeout(() => document.body.removeChild(fallbackLink), 100);
+
+    // 降级方案2：window.open
+    try {
+      window.open(url, '_blank');
+    } catch (e) {
+      // 如果 window.open 也失败（比如在 iframe 中），提示用户
+      alert(`无法自动下载，请手动打开链接：\n${url}`);
+    }
   }
 }
 
