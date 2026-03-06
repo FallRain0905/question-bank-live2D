@@ -5,6 +5,7 @@ import { getSupabase } from '@/lib/supabase';
 import { getFileIcon, formatFileSize } from '@/lib/upload';
 import Link from 'next/link';
 import type { NoteWithTags, SearchHistory } from '@/types';
+import NoteCardMobile from '@/components/NoteCardMobile';
 
 type SortOption = 'newest' | 'oldest' | 'popular';
 
@@ -410,11 +411,23 @@ export default function NotesPage() {
                 href={`/notes/${note.id}`}
                 className="block"
               >
-                <NoteCard
-                  note={note}
-                  isLiked={likedNoteIds.has(note.id)}
-                  onLike={handleLike}
-                />
+                {/* 移动端使用优化的卡片组件 */}
+                <div className="sm:hidden">
+                  <NoteCardMobile
+                    note={note}
+                    isLiked={likedNoteIds.has(note.id)}
+                    onLike={handleLike}
+                  />
+                </div>
+
+                {/* 桌面端使用原有卡片 */}
+                <div className="hidden sm:block">
+                  <NoteCard
+                    note={note}
+                    isLiked={likedNoteIds.has(note.id)}
+                    onLike={handleLike}
+                  />
+                </div>
               </Link>
             ))}
           </div>

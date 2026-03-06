@@ -6,7 +6,7 @@ import { getSupabase, getUserProfiles } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Link from 'next/link';
-import { getFileIcon, formatFileSize, downloadFile } from '@/lib/upload';
+import { getFileIcon, formatFileSize } from '@/lib/upload';
 import type { NoteWithTags, CommentWithUser } from '@/types';
 import { UserAvatar, UserTag } from '@/components/UserAvatar';
 
@@ -408,15 +408,6 @@ export default function NoteDetailPage() {
     router.push('/notes');
   };
 
-  // 下载笔记文件
-  const handleDownloadNote = async () => {
-    if (!note?.file_url) return;
-    await downloadFile(
-      note.file_url,
-      note.file_name || '笔记文件'
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
@@ -524,12 +515,14 @@ export default function NoteDetailPage() {
                   <p className="text-sm text-gray-500">{formatFileSize(note.file_size)}</p>
                 )}
               </div>
-              <button
-                onClick={handleDownloadNote}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              <a
+                href={note.file_url}
+                download={note.file_name || '文件'}
+                target="_blank"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition no-underline"
               >
                 下载文件
-              </button>
+              </a>
             </div>
           )}
 
