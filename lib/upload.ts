@@ -142,11 +142,38 @@ export async function deleteFile(path: string, bucket: string = 'files'): Promis
   }
 }
 
-// 下载文件（移动端友好）
+// 下载文件（移动端优化版）
 export async function downloadFile(
   url: string,
   fileName: string
 ): Promise<void> {
+  // 检测是否为移动设备
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // 移动端直接使用锚标签打开（iOS Safari 对 download 属性支持有限）
+  if (isMobile) {
+    // 对于移动端，直接创建一个锚标签让点击
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.style.position = 'absolute';
+    link.style.left = '-9999px';
+    document.body.appendChild(link);
+
+    // 触发点击
+    link.click();
+
+    // 移动端延迟更长时间确保下载开始
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, isIOS ? 500 : 200);
+    return;
+  }
+
+  // 桌面端使用 Blob 方式下载
   try {
     // 使用 fetch 获取文件
     const response = await fetch(url);
@@ -162,34 +189,61 @@ export async function downloadFile(
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = fileName;
-    link.style.display = 'none'; // 防止显示在页面上
+    link.style.display = 'none';
     document.body.appendChild(link);
+
+    // 触发下载
     link.click();
 
-    // 清理 - 延迟一点确保下载已触发
+    // 清理 - 延迟确保下载已触发
     setTimeout(() => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-    }, 100);
+    }, 200);
   } catch (error) {
     console.error('下载文件失败:', error);
-    // 降级方案1：直接打开链接
+    // 降级方案：直接打开链接
     const fallbackLink = document.createElement('a');
     fallbackLink.href = url;
     fallbackLink.target = '_blank';
+    fallbackLink.rel = 'noopener noreferrer';
     fallbackLink.download = fileName;
     document.body.appendChild(fallbackLink);
     fallbackLink.click();
-    setTimeout(() => document.body.removeChild(fallbackLink), 100);
-
-    // 降级方案2：window.open
-    try {
-      window.open(url, '_blank');
-    } catch (e) {
-      // 如果 window.open 也失败（比如在 iframe 中），提示用户
-      alert(`无法自动下载，请手动打开链接：\n${url}`);
-    }
+    setTimeout(() => document.body.removeChild(fallbackLink), 200);
   }
+}
+
+// 移动端下载按钮点击处理器（内联使用）
+export function handleMobileDownloadClick(
+  event: React.MouseEvent,
+  url: string,
+  fileName: string
+): void {
+  // 阻止默认行为，手动处理
+  event.preventDefault();
+
+  // iOS 特殊处理：直接 window.open
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isIOS) {
+    // iOS Safari：在新标签页打开文件
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  // Android：尝试下载
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+
+  // 延迟清理
+  setTimeout(() => {
+    document.body.removeChild(link);
+  }, 200);
 }
 
 // 上传用户头像

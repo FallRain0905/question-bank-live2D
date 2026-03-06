@@ -418,6 +418,7 @@ export default function QuestionDetailPage() {
                   href={question.question_file_url}
                   download={question.question_file_name || '题目文档'}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-brand-50 rounded-lg text-sm font-medium hover:bg-brand-600 transition no-underline"
                 >
                   <span>下载题目文档</span>
@@ -464,6 +465,7 @@ export default function QuestionDetailPage() {
                 <a
                   href={question.answer_file_url}
                   download={question.answer_file_name || '答案文档'}
+                  rel="noopener noreferrer"
                   target="_blank"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-brand-50 rounded-lg text-sm font-medium hover:bg-green-700 transition no-underline"
                 >

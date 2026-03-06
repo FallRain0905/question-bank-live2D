@@ -519,6 +519,7 @@ export default function NoteDetailPage() {
                 href={note.file_url}
                 download={note.file_name || '文件'}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition no-underline"
               >
                 下载文件
