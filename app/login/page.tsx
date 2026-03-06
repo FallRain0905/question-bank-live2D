@@ -28,6 +28,33 @@ export default function LoginPage() {
     };
   }, []);
 
+  // 创建用户资料（通过 API）
+  const createUserProfile = async (userId: string, accessToken?: string) => {
+    try {
+      const response = await fetch('/api/users/create-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          username: username.trim(),
+          displayName: username.trim(),
+          accessToken,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('创建用户资料 API 失败:', result.error);
+      }
+
+      return result;
+    } catch (err) {
+      console.error('创建用户资料请求失败:', err);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -55,20 +82,28 @@ export default function LoginPage() {
         if (error) {
           setError(error.message);
         } else if (data.user) {
-          // 创建用户公开信息记录
-          try {
-            await supabase.from('user_profiles').insert({
-              id: data.user.id,
-              username: username.trim(),
-              display_name: username.trim(),
-            });
-          } catch (err) {
-            console.log('创建用户资料失败:', err);
+          // 尝试创建用户公开信息记录
+          if (data.session?.access_token) {
+            // 如果有会话（不需要邮箱验证），尝试创建资料
+            await createUserProfile(data.user.id, data.session.access_token);
+          } else {
+            // 需要邮箱验证，使用服务端 API 尝试创建
+            await createUserProfile(data.user.id);
           }
 
-          setError('注册成功！请登录。');
-          setIsSignUp(false);
-          setUsername('');
+          if (data.session) {
+            // 注册后自动登录
+            setError('注册成功！正在跳转...');
+            setTimeout(() => {
+              router.push('/');
+              router.refresh();
+            }, 500);
+          } else {
+            // 需要邮箱验证
+            setError('注册成功！请检查邮箱并点击确认链接，然后登录。');
+            setIsSignUp(false);
+            setUsername('');
+          }
         } else {
           setError('注册失败，请重试');
         }
@@ -82,7 +117,23 @@ export default function LoginPage() {
         if (error) {
           setError(error.message);
         } else if (data.session) {
-          // 登录成功 - 使用 router.push 而不是强刷
+          // 登录成功 - 检查是否有用户资料
+          try {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .maybeSingle();
+
+            // 如果没有用户资料，创建一个
+            if (!profile && data.user?.user_metadata?.username) {
+              await createUserProfile(data.user.id, data.session.access_token);
+            }
+          } catch (err) {
+            console.log('检查/创建用户资料失败:', err);
+          }
+
+          // 使用 router.push 而不是刷新
           router.push('/');
           router.refresh();
           return; // 直接返回，不执行 setLoading(false)
