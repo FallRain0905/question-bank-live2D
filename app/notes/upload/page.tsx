@@ -145,7 +145,7 @@ export default function NoteUploadPage() {
       return;
     }
 
-    if (!selectedClassId) {
+    if (visibility === 'class' && !selectedClassId) {
       setError('请选择一个班级');
       return;
     }
@@ -163,20 +163,26 @@ export default function NoteUploadPage() {
       const fileSize = file.size;
 
       // 插入笔记记录
+      const insertData: any = {
+        user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        file_url: fileUrl,
+        file_name: fileName,
+        file_type: fileType,
+        file_size: fileSize,
+        status: 'pending',
+        visibility: visibility,
+      };
+
+      // 仅当选择班级可见时添加 class_id
+      if (visibility === 'class' && selectedClassId) {
+        insertData.class_id = selectedClassId;
+      }
+
       const { data: noteData, error: insertError } = await supabase
         .from('notes')
-        .insert({
-          user_id: user.id,
-          title: title.trim(),
-          description: description.trim() || null,
-          file_url: fileUrl,
-          file_name: fileName,
-          file_type: fileType,
-          file_size: fileSize,
-          status: 'pending',
-          class_id: selectedClassId,
-          visibility: visibility,
-        })
+        .insert(insertData)
         .select('id')
         .single();
 
@@ -251,31 +257,33 @@ export default function NoteUploadPage() {
             </div>
           )}
 
-          {/* 班级选择 */}
-          <div>
-            <label className="block text-sm font-medium text-brand-200 mb-2">
-              选择班级 <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="w-full px-4 py-2.5 bg-brand-900 border border-brand-700 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-brand-100"
-              disabled={uploading}
-            >
-              <option value="">请选择班级</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                  {cls.userRole === 'creator' && ' (管理员)'}
-                </option>
-              ))}
-            </select>
-            {classes.length === 0 && (
-              <p className="mt-1 text-sm text-brand-400">
-                还没有加入班级，请先 <a href="/classes" className="text-brand-200 hover:text-brand-100">创建或加入班级</a>
-              </p>
-            )}
-          </div>
+          {/* 班级选择 - 仅当选择班级可见时显示 */}
+          {visibility === 'class' && (
+            <div>
+              <label className="block text-sm font-medium text-brand-200 mb-2">
+                选择班级 <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-brand-900 border border-brand-700 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-brand-100"
+                disabled={uploading}
+              >
+                <option value="">请选择班级</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                    {cls.userRole === 'creator' && ' (管理员)'}
+                  </option>
+                ))}
+              </select>
+              {classes.length === 0 && (
+                <p className="mt-1 text-sm text-brand-400">
+                  还没有加入班级，请先 <a href="/classes" className="text-brand-200 hover:text-brand-100">创建或加入班级</a>
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 可见性选择 */}
           <div className="bg-brand-700/30 border border-brand-700/50 rounded-lg p-4">
@@ -422,7 +430,7 @@ export default function NoteUploadPage() {
           <div className="pt-4">
             <button
               type="submit"
-              disabled={uploading || !selectedClassId}
+              disabled={uploading || (visibility === 'class' && !selectedClassId)}
               className="w-full py-3 bg-brand-500 text-brand-50 rounded-lg font-medium hover:bg-brand-400 transition disabled:bg-brand-800 disabled:cursor-not-allowed disabled:text-brand-500"
             >
               {uploading ? '上传中...' : '上传笔记'}

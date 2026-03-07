@@ -17,7 +17,6 @@ export default function NotesPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [likedNoteIds, setLikedNoteIds] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
@@ -47,24 +46,24 @@ export default function NotesPage() {
       }
 
       setCurrentUserId(user.id);
-      setIsAdmin(user.user_metadata?.is_admin === true);
 
       const supabase = getSupabase();
 
       // 获取用户加入的班级ID列表
-      let userClassIds: string[] = [];
+      let classIds: string[] = [];
       try {
         const { data: classMembers } = await supabase
           .from('class_members')
           .select('class_id')
-          .eq('user_id', user.id);
-        userClassIds = classMembers?.map((c: any) => c.class_id) || [];
+          .eq('user_id', user.id)
+          .eq('status', 'approved');
+        classIds = classMembers?.map((c: any) => c.class_id) || [];
       } catch (err) {
         // 表可能还不存在，忽略
         console.log('class_members 表可能不存在');
       }
 
-      // 管理员可以查看所有笔记，普通用户只能查看自己班级的笔记
+      // RLS 会处理权限，不需要在前端过滤 status
       const { data: notesData, error } = await supabase
         .from('notes')
         .select(`
@@ -74,23 +73,33 @@ export default function NotesPage() {
             name
           )
         `)
-        .eq('status', 'approved')
         .order('created_at', { ascending: false });
-
-      // 过滤：管理员看全部，普通用户只看自己班级的
-      let filteredNotes = notesData || [];
-      if (!isAdmin && userClassIds.length > 0) {
-        filteredNotes = filteredNotes.filter((n: any) =>
-          userClassIds.includes(n.class_id)
-        );
-      } else if (!isAdmin && userClassIds.length === 0) {
-        // 非管理员且没有班级，返回空列表
-        filteredNotes = [];
-      }
 
       if (error) {
         console.error('获取笔记失败:', error);
+        setNotes([]);
       } else {
+        // 前端过滤：根据可见性和状态
+        const filteredNotes = (notesData || []).filter((n: any) => {
+          // 如果没有 visibility 字段，默认显示已审核的（向后兼容老数据）
+          if (!n.visibility) {
+            return n.status === 'approved' || n.user_id === currentUserId;
+          }
+          // 如果是公开笔记且已审核，显示
+          if (n.visibility === 'public' && n.status === 'approved') {
+            return true;
+          }
+          // 如果是班级专属笔记且已审核，检查用户是否属于该班级
+          if (n.visibility === 'class' && n.status === 'approved' && n.class_id) {
+            return classIds.includes(n.class_id);
+          }
+          // 创建者总是能看到自己的所有笔记（包括待审核的）
+          if (n.user_id === currentUserId) {
+            return true;
+          }
+          return false;
+        });
+
         const formattedNotes = filteredNotes.map((n: any) => ({
           ...n,
           tags: n.tags || [],
@@ -190,7 +199,7 @@ export default function NotesPage() {
 
   const handleLike = async (noteId: string) => {
     const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getSupabase().auth.getUser();
 
     if (!user) {
       alert('请先登录');
@@ -471,6 +480,13 @@ function NoteCard({ note, isLiked, onLike }: {
               {tag.name}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* 审核状态 */}
+      {note.status === 'pending' && (
+        <div className="mb-3">
+          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">待审核</span>
         </div>
       )}
 

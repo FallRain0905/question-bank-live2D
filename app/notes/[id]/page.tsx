@@ -54,21 +54,6 @@ export default function NoteDetailPage() {
   const loadNote = async () => {
     const supabase = getSupabase();
 
-    // 获取用户加入的班级ID列表
-    let userClassIds: string[] = [];
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      try {
-        const { data: classMembers } = await supabase
-          .from('class_members')
-          .select('class_id')
-          .eq('user_id', user.id);
-        userClassIds = classMembers?.map((c: any) => c.class_id) || [];
-      } catch (err) {
-        console.log('class_members 表可能不存在');
-      }
-    }
-
     const { data, error } = await supabase
       .from('notes')
       .select(`
@@ -79,40 +64,31 @@ export default function NoteDetailPage() {
         )
       `)
       .eq('id', noteId)
-      .eq('status', 'approved')
       .single();
 
-    if (error) {
-      console.error('获取笔记失败:', error);
+    // 检查是否返回了数据（RLS 会处理权限）
+    if (error || !data) {
+      console.log('无权访问该笔记或笔记不存在:', error);
       router.push('/notes');
       return;
     }
 
-    if (data) {
-      // 检查班级权限：如果笔记有班级，用户必须是该班级成员
-      if (data.class_id && (!userClassIds.length || !userClassIds.includes(data.class_id))) {
-        console.error('无权访问该笔记');
-        router.push('/notes');
-        return;
-      }
+    // 获取上传者用户信息
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', data.user_id)
+      .single();
 
-      // 获取上传者用户信息
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', data.user_id)
-        .single();
+    const userName = profileData?.username || profileData?.display_name || '用户';
 
-      const userName = profileData?.username || profileData?.display_name || '用户';
+    setNote({
+      ...data,
+      tags: data.tags || [],
+      user_name: userName,
+    });
 
-      setNote({
-        ...data,
-        tags: data.tags || [],
-        user_name: userName,
-      });
-
-      setNoteAuthor(profileData);
-    }
+    setNoteAuthor(profileData);
 
     setLoading(false);
   };
@@ -426,6 +402,15 @@ export default function NoteDetailPage() {
 
   const isOwner = user && user.id === note.user_id;
 
+  // 状态显示配置
+  const statusConfig: Record<string, { text: string; className: string }> = {
+    pending: { text: '待审核', className: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+    approved: { text: '已审核', className: 'bg-green-100 text-green-700 border-green-300' },
+    rejected: { text: '已拒绝', className: 'bg-red-100 text-red-700 border-red-300' },
+  };
+
+  const statusInfo = statusConfig[note.status] || statusConfig.pending;
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -444,10 +429,23 @@ export default function NoteDetailPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <div className="text-3xl">{getFileIcon(note.file_name || '')}</div>
-                <h1 className="text-2xl font-bold text-gray-900">{note.title}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-gray-900">{note.title}</h1>
+                  {note.status !== 'approved' && (
+                    <span className={`px-2 py-1 text-xs rounded border ${statusInfo.className}`}>
+                      {statusInfo.text}
+                    </span>
+                  )}
+                </div>
               </div>
               {note.description && (
                 <p className="text-gray-600 mt-2">{note.description}</p>
+              )}
+              {/* 待审核提示 */}
+              {note.status === 'pending' && isOwner && (
+                <p className="mt-2 text-sm text-yellow-600">
+                  ⏳ 您的笔记正在等待审核，审核通过后其他用户才能查看。
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -540,16 +538,18 @@ export default function NoteDetailPage() {
                   subtitle={`上传于 ${formatDistanceToNow(new Date(note.created_at), { locale: zhCN, addSuffix: true })}`}
                 />
               </div>
-              <button
-                onClick={handleFollow}
-                className={`ml-4 px-4 py-2 text-sm rounded-lg transition ${
-                  isFollowing
-                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                }`}
-              >
-                {isFollowing ? '已关注' : '关注'}
-              </button>
+              {note.user_id !== user?.id && (
+                <button
+                  onClick={handleFollow}
+                  className={`ml-4 px-4 py-2 text-sm rounded-lg transition ${
+                    isFollowing
+                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                  }`}
+                >
+                  {isFollowing ? '已关注' : '关注'}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -51,21 +51,6 @@ export default function QuestionDetailPage() {
   const loadQuestion = async () => {
     const supabase = getSupabase();
 
-    // 获取用户加入的班级ID列表
-    let userClassIds: string[] = [];
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      try {
-        const { data: classMembers } = await supabase
-          .from('class_members')
-          .select('class_id')
-          .eq('user_id', user.id);
-        userClassIds = classMembers?.map((c: any) => c.class_id) || [];
-      } catch (err) {
-        console.log('class_members 表可能不存在');
-      }
-    }
-
     const { data, error } = await supabase
       .from('questions')
       .select(`
@@ -76,47 +61,38 @@ export default function QuestionDetailPage() {
         )
       `)
       .eq('id', questionId)
-      .eq('status', 'approved')
       .single();
 
-    if (error) {
-      console.error('获取题目失败:', error);
+    // 检查是否返回了数据（RLS 会处理权限）
+    if (error || !data) {
+      console.log('无权访问该题目或题目不存在:', error);
       router.push('/search');
       return;
     }
 
-    if (data) {
-      // 检查班级权限：如果题目有班级，用户必须是该班级成员
-      if (data.class_id && (!userClassIds.length || !userClassIds.includes(data.class_id))) {
-        console.error('无权访问该题目');
-        router.push('/search');
-        return;
-      }
+    // 获取上传者用户信息
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', data.user_id)
+      .single();
 
-      // 获取上传者用户信息
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', data.user_id)
-        .single();
-
-      let userName = '用户';
-      if (profileData) {
-        userName = profileData.username || profileData.display_name || '用户';
-      } else {
-        // 如果没有找到 profile，尝试从 user_metadata 获取或自动创建
-        userName = await getUserDisplayName(data.user_id);
-      }
-
-      setQuestion({
-        ...data,
-        tags: data.tags || [],
-        user_name: userName,
-        user_avatar_url: profileData?.avatar_url,
-      });
-
-      setQuestionAuthor(profileData || { id: data.user_id, username: userName });
+    let userName = '用户';
+    if (profileData) {
+      userName = profileData.username || profileData.display_name || '用户';
+    } else {
+      // 如果没有找到 profile，尝试从 user_metadata 获取或自动创建
+      userName = await getUserDisplayName(data.user_id);
     }
+
+    setQuestion({
+      ...data,
+      tags: data.tags || [],
+      user_name: userName,
+      user_avatar_url: profileData?.avatar_url,
+    });
+
+    setQuestionAuthor(profileData || { id: data.user_id, username: userName });
 
     setLoading(false);
   };
@@ -347,6 +323,15 @@ export default function QuestionDetailPage() {
 
   const isOwner = user && user.id === question.user_id;
 
+  // 状态显示配置
+  const statusConfig: Record<string, { text: string; className: string }> = {
+    pending: { text: '待审核', className: 'bg-yellow-900/30 text-yellow-400 border-yellow-800' },
+    approved: { text: '已审核', className: 'bg-green-900/30 text-green-400 border-green-800' },
+    rejected: { text: '已拒绝', className: 'bg-red-900/30 text-red-400 border-red-800' },
+  };
+
+  const statusInfo = statusConfig[question.status] || statusConfig.pending;
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-brand-950">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -360,9 +345,14 @@ export default function QuestionDetailPage() {
 
         {/* 题目内容 */}
         <div className="bg-brand-800/50 rounded-xl shadow-sm border border-brand-800 p-6 mb-6">
-          {/* 操作按钮 */}
+          {/* 状态提示和操作按钮 */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
+              {question.status !== 'approved' && (
+                <span className={`px-3 py-1 text-xs rounded border ${statusInfo.className}`}>
+                  {statusInfo.text}
+                </span>
+              )}
               {question.tags.map((tag) => (
                 <span
                   key={tag.id}
@@ -393,6 +383,15 @@ export default function QuestionDetailPage() {
               )}
             </div>
           </div>
+
+          {/* 待审核提示 */}
+          {question.status === 'pending' && isOwner && (
+            <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-800/50 rounded-lg">
+              <p className="text-sm text-yellow-300">
+                ⏳ 您的题目正在等待审核，审核通过后其他用户才能查看。公开题目需要审核后才能在题库中显示。
+              </p>
+            </div>
+          )}
 
           {/* 题目 */}
           <div className="mb-6">

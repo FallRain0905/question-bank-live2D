@@ -55,6 +55,7 @@ export default function SearchPage() {
         .eq('status', 'approved');
       setUserClassIds(classMembers?.map((c: any) => c.class_id) || []);
 
+      // RLS 会处理权限，不需要在前端过滤 status
       const { data: questionsData, error } = await supabase
         .from('questions')
         .select(`
@@ -64,7 +65,6 @@ export default function SearchPage() {
               name
           )
         `)
-        .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -90,6 +90,13 @@ export default function SearchPage() {
         }));
 
         setQuestions(formattedQuestions);
+
+        // 收集所有标签
+        const allTags = new Set<string>();
+        formattedQuestions.forEach((q: any) => {
+          q.tags?.forEach((t: any) => allTags.add(t.name));
+        });
+        setAvailableTags(Array.from(allTags));
       }
 
       setLoading(false);
@@ -167,18 +174,23 @@ export default function SearchPage() {
     }
 
     // 可见性过滤：只显示公开题目或用户所属班级的题目
+    // RLS 已经在数据库层面过滤了，这里只是为了兼容老数据
     filtered = filtered.filter(q => {
       // 如果没有 visibility 字段，默认显示（向后兼容老数据）
       if (!q.visibility) {
+        return q.status === 'approved' || q.user_id === currentUserId;
+      }
+      // 如果是公开题目且已审核，显示
+      if (q.visibility === 'public' && q.status === 'approved') {
         return true;
       }
-      // 如果是公开题目，显示
-      if (q.visibility === 'public') {
-        return true;
-      }
-      // 如果是班级专属题目，检查用户是否属于该班级
-      if (q.visibility === 'class' && q.class_id) {
+      // 如果是班级专属题目且已审核，检查用户是否属于该班级
+      if (q.visibility === 'class' && q.status === 'approved' && q.class_id) {
         return userClassIds.includes(q.class_id);
+      }
+      // 创建者总是能看到自己的所有题目（包括待审核的）
+      if (q.user_id === currentUserId) {
+        return true;
       }
       return false;
     });
@@ -287,48 +299,48 @@ export default function SearchPage() {
                 </div>
               )}
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-brand-400">排序:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-3 py-1.5 bg-brand-900 border border-brand-700 rounded-lg text-sm focus:ring-500 outline-none text-brand-200"
-              >
-                <option value="newest">最新</option>
-                <option value="oldest">最早</option>
-              </select>
-            </div>
-
-            {availableTags.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-4 items-center mt-4">
-                <span className="text-sm text-brand-400">标签:</span>
-                <div className="flex flex-wrap gap-2">
-                  {hotTags.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1 text-sm rounded-full transition ${
-                        selectedTags.includes(tag)
-                          ? 'bg-brand-500 text-brand-50'
-                          : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-                {selectedTags.length > 0 && (
-                  <button
-                    onClick={() => setSelectedTags([])}
-                    className="px-3 py-1 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70 rounded-full"
-                  >
-                    清除
-                  </button>
-                )}
-              </div>
-            )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-brand-400">排序:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="px-3 py-1.5 bg-brand-900 border border-brand-700 rounded-lg text-sm focus:ring-500 outline-none text-brand-200"
+            >
+              <option value="newest">最新</option>
+              <option value="oldest">最早</option>
+            </select>
+          </div>
+
+          {availableTags.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-4 items-center mt-4">
+              <span className="text-sm text-brand-400">标签:</span>
+              <div className="flex flex-wrap gap-2">
+                {hotTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className={`px-3 py-1 text-sm rounded-full transition ${
+                      selectedTags.includes(tag)
+                        ? 'bg-brand-500 text-brand-50'
+                        : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="px-3 py-1 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70 rounded-full"
+                >
+                  清除
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -362,6 +374,10 @@ export default function SearchPage() {
                       <p className="text-sm text-brand-400">
                         {getDisplayName(question)} · {new Date(question.created_at).toLocaleDateString()}
                       </p>
+                      {/* 显示审核状态 */}
+                      {question.status === 'pending' && question.user_id === currentUserId && (
+                        <span className="ml-2 text-xs text-yellow-400">待审核</span>
+                      )}
                     </div>
                   </div>
                   <div className="mb-4">
@@ -393,5 +409,5 @@ export default function SearchPage() {
         )}
       </div>
     </div>
-    );
+  );
 }

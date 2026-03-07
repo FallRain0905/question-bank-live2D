@@ -35,16 +35,17 @@ CREATE POLICY "用户可以插入自己的信息"
     WITH CHECK (auth.uid() = id);
 
 -- 创建触发器：当用户注册时自动创建 profile
+-- 注意：auth.users 表的元数据字段是 raw_user_meta_data
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO public.user_profiles (id, username, display_name)
     VALUES (
         NEW.id,
-        NEW.user_metadata->>'username',
+        COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1)),
         COALESCE(
-            NEW.user_metadata->>'username',
-            NEW.user_metadata->>'display_name',
+            NEW.raw_user_meta_data->>'display_name',
+            NEW.raw_user_meta_data->>'username',
             SPLIT_PART(NEW.email, '@', 1)
         )
     );
