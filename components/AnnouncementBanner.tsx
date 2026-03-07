@@ -16,7 +16,7 @@ export default function AnnouncementBanner() {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showBanner, setShowBanner] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   // 合并初始化，减少重复调用
   const [initialized, setInitialized] = useState(false);
@@ -52,7 +52,7 @@ export default function AnnouncementBanner() {
         // 检查是否已查看过
         const viewedAnnouncements = JSON.parse(localStorage.getItem('viewedAnnouncements') || '[]');
         if (!viewedAnnouncements.includes(data.id)) {
-          setShowBanner(true);
+          setShowModal(true);
         }
       }
 
@@ -76,7 +76,6 @@ export default function AnnouncementBanner() {
     // 记录到数据库
     try {
       const supabase = getSupabase();
-
       await supabase
         .from('announcement_views')
         .insert({ announcement_id: announcement.id, user_id: currentUser.id });
@@ -84,7 +83,7 @@ export default function AnnouncementBanner() {
       console.error('记录公告查看失败:', err);
     }
 
-    setShowBanner(false);
+    setShowModal(false);
   };
 
   const isAdmin = () => {
@@ -94,39 +93,67 @@ export default function AnnouncementBanner() {
 
   if (!currentUser || loading) return null;
 
-  if (!showBanner || !announcement) return null;
+  if (!showModal || !announcement) return null;
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-50 bg-blue-600 text-white">
-      <div className="max-w-4xl mx-auto px-4 py-3">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">📢</span>
-              <h3 className="font-semibold">{announcement.title}</h3>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden animate-in">
+        {/* 头部 */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">📢</span>
+              <h2 className="text-2xl font-bold text-white">{announcement.title}</h2>
             </div>
-            <p className="text-sm opacity-90">{announcement.content}</p>
-          </div>
-          <div className="flex items-center gap-2">
             <button
-              onClick={markAsViewed}
-              className="text-blue-100 hover:text-white transition"
+              onClick={() => {
+                // 点击右上角 X 也可以关闭，但只记录查看不标记
+                setShowModal(false);
+              }}
+              className="text-white/70 hover:text-white transition"
             >
-              知道了
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-            {isAdmin() && (
-              <button
-                onClick={() => {
-                  // 管理员可以点击编辑（后续实现）
-                  window.open('/admin/announcements', '_blank');
-                }}
-                className="text-blue-100 hover:text-white transition text-sm"
-              >
-                管理
-              </button>
-            )}
           </div>
         </div>
+
+        {/* 内容区域 */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          <div className="prose prose max-w-none">
+            <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap">
+              {announcement.content}
+            </p>
+          </div>
+        </div>
+
+        {/* 底部按钮 */}
+        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+          <p className="text-sm text-gray-500">
+            发布时间：{new Date(announcement.created_at).toLocaleString('zh-CN')}
+          </p>
+          <button
+            onClick={markAsViewed}
+            className="px-8 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+          >
+            确定
+          </button>
+        </div>
+
+        {/* 管理员链接 */}
+        {isAdmin() && (
+          <div className="bg-gray-100 px-6 py-2 border-t border-gray-200">
+            <button
+              onClick={() => {
+                window.open('/admin/announcements', '_blank');
+              }}
+              className="text-sm text-gray-600 hover:text-blue-600 transition"
+            >
+              管理公告 →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
