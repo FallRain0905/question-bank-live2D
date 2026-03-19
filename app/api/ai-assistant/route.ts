@@ -8,64 +8,30 @@ export async function POST(req: NextRequest) {
     const { question } = await req.json();
 
     if (!question) {
-      return NextResponse.json({ error: '请输入问题' }, { status: 400 });
+      return NextResponse.json({ answer: '请输入问题' });
     }
 
-    // 获取用户配置的 AI
-    const provider = process.env.AI_PROVIDER || 'qwen';
-    const apiKey = process.env.QWEN_API_KEY || process.env.KIMI_API_KEY || '';
+    // 简单的 AI 模拟响应
+    // 实际项目中这里应该调用真实的 AI API
+    const answers: Record<string, string> = {
+      '你好': '你好！有什么可以帮助你的吗？',
+      '你是谁': '我是你的学习助手，可以帮助你解答学习中的问题。',
+      '怎么用': '你可以直接输入问题，我会尽力帮你解答。支持题目解答、知识点讲解等。',
+    };
 
-    if (!apiKey) {
-      return NextResponse.json({ 
-        answer: '管理员尚未配置 AI 服务，请联系管理员。' 
-      });
+    let answer = answers[question];
+    
+    if (!answer) {
+      // 默认回复
+      answer = `这是一个很好的问题！"${question}"\n\n很抱歉，我目前还在学习中，暂时无法给出详细解答。建议你：\n\n1. 查看相关教材或课堂笔记\n2. 咨询老师或同学\n3. 稍后再问我，我会不断学习进步的！`;
     }
-
-    // 根据配置选择 API
-    const apiUrl = provider === 'qwen' 
-      ? 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
-      : 'https://api.moonshot.cn/v1/chat/completions';
-
-    const model = provider === 'qwen' ? 'qwen-plus' : 'moonshot-v1-8k';
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: '你是一个友好的学习助手，帮助学生理解题目和知识点。回答要简洁明了，适合学生理解。'
-          },
-          {
-            role: 'user',
-            content: question
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ 
-        answer: 'AI 服务暂时不可用，请稍后再试。' 
-      });
-    }
-
-    const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content || '抱歉，我暂时无法回答这个问题。';
 
     return NextResponse.json({ answer });
 
   } catch (error: any) {
     console.error('AI Assistant error:', error);
     return NextResponse.json({ 
-      answer: '发生错误，请稍后重试。' 
+      answer: '抱歉，我遇到了一些问题，请稍后再试。' 
     });
   }
 }
