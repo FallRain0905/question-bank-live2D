@@ -10,6 +10,7 @@ interface Message {
 
 export default function FloatingAIButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -168,19 +169,36 @@ export default function FloatingAIButton() {
 
       {/* 对话框 */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className={`fixed z-50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-300 ${
+          isExpanded 
+            ? 'bottom-24 right-6 w-[600px] h-[500px]' 
+            : 'bottom-24 right-6 w-80 sm:w-96'
+        }`}>
           {/* 标题栏 */}
-          <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3">
+          <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 flex items-center justify-between">
             <h3 className="text-white font-medium flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               AI 学习助手
             </h3>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-white/80 hover:text-white transition-colors"
+              title={isExpanded ? '缩小' : '放大'}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isExpanded ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                )}
+              </svg>
+            </button>
           </div>
           
           {/* 消息列表 */}
-          <div className="h-64 overflow-y-auto p-4 space-y-3">
+          <div className={`${isExpanded ? 'h-[360px]' : 'h-64'} overflow-y-auto p-4 space-y-3`}>
             {messages.length === 0 ? (
               <div className="text-center text-brand-500 text-sm py-8">
                 <p className="mb-2">👋 你好！我是你的学习助手</p>
@@ -230,6 +248,23 @@ export default function FloatingAIButton() {
           {/* 输入区 */}
           <div className="p-4 border-t border-brand-100">
             <div className="flex gap-2 mb-2">
+              {/* 放大/缩小按钮 */}
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
+                title={isExpanded ? "缩小" : "放大"}
+              >
+                {isExpanded ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                )}
+              </button>
+              
               {/* 截图按钮 */}
               <button
                 onClick={handleScreenshot}
