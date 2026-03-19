@@ -560,7 +560,7 @@ export default function ParsePage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gray-50">
+    <div className="min-h-[calc(100vh-64px)] theme-bg-gradient">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* 页头 */}
         <div className="mb-6">
@@ -726,7 +726,7 @@ export default function ParsePage() {
                     </button>
                   </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 max-h-[300px] overflow-y-auto">
+                <div className="theme-bg-gradient rounded-lg p-4 max-h-[300px] overflow-y-auto">
                   <pre className="text-sm text-gray-700 whitespace-pre-wrap">
                     {parseResult.markdown.slice(0, 500)}
                     {parseResult.markdown.length > 500 && '...'}
@@ -807,7 +807,7 @@ export default function ParsePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-medium text-gray-700 mb-2">题目预览</h3>
-                    <div className="bg-gray-50 rounded-lg p-3 max-h-[200px] overflow-y-auto">
+                    <div className="theme-bg-gradient rounded-lg p-3 max-h-[200px] overflow-y-auto">
                       <pre className="text-xs text-gray-700 whitespace-pre-wrap">
                         {questionResult.markdown.slice(0, 200)}
                         {questionResult.markdown.length > 200 && '...'}
@@ -816,7 +816,7 @@ export default function ParsePage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-gray-700 mb-2">答案预览</h3>
-                    <div className="bg-gray-50 rounded-lg p-3 max-h-[200px] overflow-y-auto">
+                    <div className="theme-bg-gradient rounded-lg p-3 max-h-[200px] overflow-y-auto">
                       <pre className="text-xs text-gray-700 whitespace-pre-wrap">
                         {answerResult.markdown.slice(0, 200)}
                         {answerResult.markdown.length > 200 && '...'}
@@ -909,7 +909,7 @@ export default function ParsePage() {
                     className={`border rounded-lg p-4 transition ${
                       isSelected
                         ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 bg-gray-50'
+                        : 'border-gray-200 theme-bg-gradient'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -968,7 +968,7 @@ export default function ParsePage() {
                               </button>
                               <button
                                 onClick={cancelEdit}
-                                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm hover:theme-bg-gradient"
                               >
                                 取消
                               </button>

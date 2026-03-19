@@ -229,8 +229,46 @@ export default function SearchPage() {
 
   const handleFavorite = async (questionId: string, e: React.MouseEvent) => {
     e.preventDefault();
-    // TODO: 实现收藏功能
-    alert('收藏功能开发中');
+    
+    if (!currentUserId) {
+      alert('请先登录');
+      return;
+    }
+
+    try {
+      const supabase = getSupabase();
+      
+      // 检查是否已收藏
+      const { data: existing } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .eq('target_type', 'question')
+        .eq('target_id', questionId)
+        .single();
+
+      if (existing) {
+        // 取消收藏
+        await supabase
+          .from('favorites')
+          .delete()
+          .eq('id', existing.id);
+        alert('已取消收藏');
+      } else {
+        // 添加收藏
+        await supabase
+          .from('favorites')
+          .insert({
+            user_id: currentUserId,
+            target_type: 'question',
+            target_id: questionId,
+          });
+        alert('收藏成功！');
+      }
+    } catch (error) {
+      console.error('收藏操作失败:', error);
+      alert('操作失败，请稍后重试');
+    }
   };
 
   const handleSearch = (query: string) => {
@@ -408,8 +446,8 @@ export default function SearchPage() {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        // 快速预览
-                        alert('预览功能开发中');
+                        // 快速预览 - 跳转到详情页
+                        window.open(`/questions/${question.id}`, '_blank');
                       }}
                       className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:bg-brand-50 transition-colors"
                       title="快速预览"
