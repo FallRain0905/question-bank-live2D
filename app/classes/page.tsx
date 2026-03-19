@@ -433,22 +433,25 @@ export default function ClassesPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-brand-950">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen relative">
+      {/* 背景 */}
+      <div className="fixed inset-0 pointer-events-none theme-bg-gradient" />
+      
+      <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-50">我的班级</h1>
+          <h1 className="text-2xl font-bold text-brand-700">我的班级</h1>
         </div>
 
         <div className="flex gap-3">
           <button
             onClick={() => setShowJoinModal(true)}
-            className="px-4 py-2 bg-brand-800 text-brand-200 border border-brand-700 rounded-lg hover:border-brand-500 transition-colors"
+            className="px-4 py-2 bg-white text-brand-600 border border-brand-300 rounded-lg hover:border-brand-400 transition-colors"
           >
             加入班级
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-brand-500 text-brand-50 rounded-lg hover:bg-brand-400 transition-colors"
+            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
           >
             创建班级
           </button>

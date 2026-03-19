@@ -15,14 +15,18 @@ export interface Theme {
     900: string;
     950: string;
   };
-  imageUrl?: string;
-}
-
-export interface ImageTheme {
-  id: string;
-  name: string;
-  imageUrl: string;
-  colors: Theme['colors'];
+  isDark?: boolean;
+  // 扩展配色
+  bg?: string;           // 背景色
+  bgGradient?: string;   // 背景渐变
+  cardBg?: string;       // 卡片背景
+  cardBorder?: string;   // 卡片边框
+  textPrimary?: string;  // 主要文字
+  textSecondary?: string; // 次要文字
+  buttonPrimary?: string; // 主按钮
+  buttonSecondary?: string; // 次按钮
+  accent?: string;       // 强调色
+  shadow?: string;       // 阴影色
 }
 
 export interface CustomThemeColors {
@@ -39,162 +43,119 @@ export interface CustomThemeColors {
   950?: string;
 }
 
-// 默认自定义配色
-export const DEFAULT_CUSTOM_COLORS = {
-  50: '#F0F9FF',
-  100: '#E0F2FE',
-  200: '#BAE6FD',
-  300: '#7DD3FC',
-  400: '#38BDF8',
-  500: '#0EA5E9',
-  600: '#0284C7',
-  700: '#0369A1',
-  800: '#075985',
-  900: '#0C4A6E',
-  950: '#082F49',
+// ============================================
+// 方案一：深邃专业风（第五组配色）
+// ============================================
+const PROFESSIONAL_THEME: Theme = {
+  id: 'professional',
+  name: '深邃专业',
+  isDark: false,
+  colors: {
+    50: '#c0e6fd',   // 最浅 - 背景渐变起点
+    100: '#80aad3',  // 浅蓝
+    200: '#5b86b6',  // 中浅蓝
+    300: '#3f6593',  // 中蓝 - 图标色
+    400: '#2a4d78',  // 中深蓝
+    500: '#1b3554',  // 主色 - 按钮、标题
+    600: '#152a45',  // 深蓝
+    700: '#0f1f35',  // 更深
+    800: '#091526',  // 很深
+    900: '#040b18',  // 极深
+    950: '#000f22',  // 最深 - 页脚背景
+  },
+  // 扩展配色
+  bg: 'linear-gradient(to bottom, #c0e6fd, #ffffff, #ffffff)',
+  cardBg: 'rgba(255, 255, 255, 0.9)',
+  cardBorder: 'rgba(128, 170, 211, 0.3)',
+  textPrimary: '#1b3554',
+  textSecondary: '#3f6593',
+  buttonPrimary: '#1b3554',
+  buttonSecondary: '#80aad3',
+  accent: '#3f6593',
+  shadow: 'rgba(128, 170, 211, 0.2)',
 };
 
-// 默认图片主题
-const DEFAULT_IMAGE_THEME: ImageTheme = {
-  id: 'image',
-  name: '图片主题',
-  imageUrl: '',
-  colors: DEFAULT_CUSTOM_COLORS,
+// ============================================
+// 方案二：温润清新风（第三组配色）
+// ============================================
+const FRESH_THEME: Theme = {
+  id: 'fresh',
+  name: '温润清新',
+  isDark: false,
+  colors: {
+    50: '#d8fcd5',   // 最浅绿 - 背景渐变起点
+    100: '#e1f2cd',  // 浅绿
+    200: '#e8eac5',  // 淡黄绿
+    300: '#efe2bd',  // 浅黄 - 卡片边框
+    400: '#f7dbb6',  // 浅橙
+    500: '#fdd3af',  // 橙色 - 主按钮
+    600: '#e8b88a',  // 深橙
+    700: '#d49a5f',  // 更深
+    800: '#b87d3f',  // 很深
+    900: '#8a5a2a',  // 极深 - 标题文字
+    950: '#3d5a2e',  // 深绿 - 正文文字
+  },
+  // 扩展配色
+  bg: 'linear-gradient(to bottom, #d8fcd5, #ffffff, #ffffff)',
+  cardBg: 'rgba(255, 255, 255, 0.95)',
+  cardBorder: 'rgba(239, 226, 189, 0.5)',
+  textPrimary: '#3d5a2e',      // 深绿色 - 主文字
+  textSecondary: '#5a7a4a',    // 中绿色 - 次要文字
+  buttonPrimary: '#f7dbb6',
+  buttonSecondary: 'transparent',
+  accent: '#fdd3af',
+  shadow: 'rgba(216, 252, 213, 0.3)',
 };
 
+// ============================================
+// 方案三：科技未来感（第四组配色）
+// ============================================
+const TECH_THEME: Theme = {
+  id: 'tech',
+  name: '科技未来',
+  isDark: false,
+  colors: {
+    50: '#e7ffc9',   // 最浅绿 - 背景渐变起点
+    100: '#c2ecd6',  // 浅青绿
+    200: '#a4dee1',  // 青色 - 背景中段
+    300: '#7ccbed',  // 浅蓝 - 页脚
+    400: '#59bcf6',  // 蓝色 - 次要文字
+    500: '#3aaeff',  // 亮蓝 - 主按钮
+    600: '#2b9de8',  // 深蓝
+    700: '#1c8ad0',  // 更深
+    800: '#0d77b6',  // 很深
+    900: '#0a5a8a',  // 极深
+    950: '#1a3a4a',  // 深青 - 文字
+  },
+  // 扩展配色
+  bg: 'linear-gradient(to bottom, #e7ffc9, #a4dee1, #c2ecd6)',
+  cardBg: 'rgba(255, 255, 255, 0.7)',  // 半透明 - 磨砂玻璃效果
+  cardBorder: 'rgba(164, 222, 225, 0.4)',
+  textPrimary: '#1a3a4a',
+  textSecondary: '#2d5a6e',
+  buttonPrimary: '#3aaeff',
+  buttonSecondary: 'transparent',
+  accent: '#59bcf6',
+  shadow: 'rgba(164, 222, 225, 0.25)',
+};
+
+// ============================================
+// 主题注册
+// ============================================
 export const themes: Record<string, Theme> = {
-  // 保留原有的两个主题
-  a: {
-    id: 'a',
-    name: '深蓝商务',
-    colors: {
-      50: '#F0F9FF',
-      100: '#E0F2FE',
-      200: '#BAE6FD',
-      300: '#7DD3FC',
-      400: '#38BDF8',
-      500: '#0EA5E9',
-      600: '#0284C7',
-      700: '#0369A1',
-      800: '#075985',
-      900: '#0C4A6E',
-      950: '#082F49',
-    },
-  },
-  b: {
-    id: 'b',
-    name: '紫罗兰',
-    colors: {
-      50: '#EDE5E3',
-      100: '#DBBACB',
-      200: '#87799E',
-      300: '#6CBDA1',
-      400: '#6CBDA1',
-      500: '#6E87B0',
-      600: '#6E87B0',
-      700: '#5B6E8F',
-      800: '#4A5675',
-      900: '#3A3E5B',
-      950: '#2A2B40',
-    },
-  },
-  // 新增配色方案 - 根据报告建议
-  c: {
-    id: 'c',
-    name: '学院蓝',
-    colors: {
-      50: '#EFF6FF',
-      100: '#DBEAFE',
-      200: '#BFDBFE',
-      300: '#93C5FD',
-      400: '#60A5FA',
-      500: '#3B82F6',
-      600: '#2563EB',
-      700: '#1D4ED8',
-      800: '#1E40AF',
-      900: '#1E3A8A',
-      950: '#0F172A',
-    },
-  },
-  d: {
-    id: 'd',
-    name: '清新绿',
-    colors: {
-      50: '#F0FDF4',
-      100: '#DCFCE7',
-      200: '#BBF7D0',
-      300: '#86EFAC',
-      400: '#4ADE80',
-      500: '#10B981',
-      600: '#059669',
-      700: '#047857',
-      800: '#065F46',
-      900: '#064E3B',
-      950: '#022C22',
-    },
-  },
-  e: {
-    id: 'e',
-    name: '高级紫灰',
-    colors: {
-      50: '#F5F3FF',
-      100: '#EDE9FE',
-      200: '#DDD6FE',
-      300: '#C4B5FD',
-      400: '#A78BFA',
-      500: '#8B5CF6',
-      600: '#7C3AED',
-      700: '#6D28D9',
-      800: '#5B21B6',
-      900: '#4C1D95',
-      950: '#2E1065',
-    },
-  },
-  // 图片主题（用于存储用户上传的图片）
-  image: DEFAULT_IMAGE_THEME,
+  professional: PROFESSIONAL_THEME,
+  fresh: FRESH_THEME,
+  tech: TECH_THEME,
 };
 
-// 默认主题（自定义颜色）
-export const DEFAULT_THEME = 'a';
+// 默认主题
+export const DEFAULT_THEME = 'professional';
 
 // 获取当前主题
-export function getCurrentTheme(): Theme | ImageTheme {
+export function getCurrentTheme(): Theme {
   if (typeof window === 'undefined') return themes[DEFAULT_THEME];
   const saved = localStorage.getItem('theme');
-
-  if (saved === 'image') {
-    const imageTheme = getImageTheme();
-    return imageTheme;
-  }
-
   return themes[saved || DEFAULT_THEME] || themes[DEFAULT_THEME];
-}
-
-// 获取自定义主题颜色
-export function getCustomThemeColors(): CustomThemeColors {
-  if (typeof window === 'undefined') return DEFAULT_CUSTOM_COLORS;
-  const saved = localStorage.getItem('customThemeColors');
-  return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_COLORS;
-}
-
-// 获取图片主题
-export function getImageTheme(): ImageTheme {
-  if (typeof window === 'undefined') return DEFAULT_IMAGE_THEME;
-  const saved = localStorage.getItem('imageTheme');
-  return saved ? JSON.parse(saved) : DEFAULT_IMAGE_THEME;
-}
-
-// 保存自定义主题颜色
-export function saveCustomThemeColors(colors: CustomThemeColors): void {
-  if (typeof window === 'undefined') return;
-  const mergedColors = { ...DEFAULT_CUSTOM_COLORS, ...colors };
-  localStorage.setItem('customThemeColors', JSON.stringify(mergedColors));
-}
-
-// 保存图片主题
-export function saveImageTheme(imageTheme: ImageTheme): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('imageTheme', JSON.stringify(imageTheme));
 }
 
 // 设置当前主题
@@ -206,48 +167,12 @@ export function setCurrentTheme(themeId: string): void {
 
 // 应用主题到页面
 export function applyTheme(themeId: string): void {
-  let theme: Theme | ImageTheme;
-
-  if (themeId === 'image') {
-    theme = getImageTheme();
-  } else {
-    theme = themes[themeId];
-  }
-
+  const theme = themes[themeId];
   if (!theme) return;
 
   const root = document.documentElement;
-  const body = document.body;
 
-  // 移除所有主题类
-  Object.keys(themes).forEach(key => {
-    root.classList.remove(`theme-${key}`);
-  });
-  root.classList.remove('theme-custom', 'theme-image');
-  body.classList.remove('theme-image-bg');
-
-  // 添加新主题类
-  if (themeId === 'image') {
-    root.classList.add('theme-image');
-    body.classList.add('theme-image-bg');
-  } else if (themeId === 'custom') {
-    root.classList.add('theme-custom');
-  } else {
-    root.classList.add(`theme-${themeId}`);
-  }
-
-  // 设置背景图片（带虚化效果）
-  if (theme.imageUrl) {
-    root.style.backgroundImage = `url(${theme.imageUrl})`;
-    root.style.backgroundSize = 'cover';
-    root.style.backgroundPosition = 'center';
-    root.style.backgroundAttachment = 'fixed';
-  } else {
-    root.style.backgroundImage = '';
-    root.style.backgroundAttachment = '';
-  }
-
-  // 设置 CSS 变量
+  // 设置 CSS 变量 - 颜色
   root.style.setProperty('--brand-50', theme.colors[50]);
   root.style.setProperty('--brand-100', theme.colors[100]);
   root.style.setProperty('--brand-200', theme.colors[200]);
@@ -259,10 +184,37 @@ export function applyTheme(themeId: string): void {
   root.style.setProperty('--brand-800', theme.colors[800]);
   root.style.setProperty('--brand-900', theme.colors[900]);
   root.style.setProperty('--brand-950', theme.colors[950]);
+
+  // 设置扩展变量
+  if (theme.bg) root.style.setProperty('--theme-bg', theme.bg);
+  if (theme.cardBg) root.style.setProperty('--theme-card-bg', theme.cardBg);
+  if (theme.cardBorder) root.style.setProperty('--theme-card-border', theme.cardBorder);
+  if (theme.textPrimary) root.style.setProperty('--theme-text-primary', theme.textPrimary);
+  if (theme.textSecondary) root.style.setProperty('--theme-text-secondary', theme.textSecondary);
+  if (theme.buttonPrimary) root.style.setProperty('--theme-button-primary', theme.buttonPrimary);
+  if (theme.buttonSecondary) root.style.setProperty('--theme-button-secondary', theme.buttonSecondary);
+  if (theme.accent) root.style.setProperty('--theme-accent', theme.accent);
+  if (theme.shadow) root.style.setProperty('--theme-shadow', theme.shadow);
+
+  // 移除旧主题类，添加新主题类
+  root.classList.remove('theme-professional', 'theme-fresh', 'theme-tech');
+  root.classList.add(`theme-${themeId}`);
+
+  // 深色模式标记
+  if (theme.isDark) {
+    root.classList.add('dark-mode');
+  } else {
+    root.classList.remove('dark-mode');
+  }
 }
 
 // 初始化主题
 export function initTheme(): void {
   const currentTheme = getCurrentTheme();
   applyTheme(currentTheme.id);
+}
+
+// 获取所有主题列表
+export function getThemeList(): { id: string; name: string }[] {
+  return Object.values(themes).map(t => ({ id: t.id, name: t.name }));
 }

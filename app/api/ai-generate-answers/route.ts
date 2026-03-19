@@ -1,28 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { callAI, type AIConfig } from '@/lib/ai-service';
 
-// Kimi API 配置
-const KIMI_API_URL = 'https://api.moonshot.cn/v1/chat/completions';
-
-interface KimiRequest {
-  model: string;
-  messages: Array<{
-    role: string;
-    content: string;
-  }>;
-  temperature: number;
-  max_tokens?: number;
-}
-
-interface ParsedQuestion {
+interface Question {
   question_text: string;
   answer_text?: string;
-}
-
-// LaTeX 反斜杠修复函数
-function fixLaTeXEscaping(jsonStr: string): string {
-  // 将未转义的 LaTeX 反斜杠转为双反斜杠
-  // 只匹配后面跟着字母/数字的单反斜杠，避开已经是双反斜杠的情况
-  return jsonStr.replace(/(?<!\\)\\(?=[a-zA-Z0-9])/g, '\\\\');
 }
 
 export const runtime = 'nodejs';
@@ -32,7 +13,7 @@ export async function POST(req: NextRequest) {
   console.log('>>> 开始 AI 生成答案...');
 
   try {
-    const { apiKey, questions } = await req.json();
+    const { provider, apiKey, apiUrl, model, questions } = await req.json();
 
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
       return NextResponse.json(
@@ -41,189 +22,101 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!apiKey) {
+    // 构建 AI 配置
+    const config: AIConfig = {
+      provider: provider || 'qwen',
+      apiKey: apiKey || '',
+      apiUrl,
+      model,
+    };
+
+    // 千问不需要用户填 API Key
+    if (config.provider !== 'qwen' && !config.apiKey) {
       return NextResponse.json(
         { success: false, error: '缺少 API Key' },
         { status: 400 }
       );
     }
 
-    console.log('需要生成答案的题目数:', questions.length);
+    console.log('使用 AI 提供商:', config.provider);
+    console.log('待生成答案的题目数:', questions.length);
 
-    // 构建题目列表文本
-    const questionsText = questions
-      .map((q, i) => `${i + 1}. ${q.question_text}`)
-      .join('\n');
+    // 批量处理题目（每次最多处理 10 道）
+    const batchSize = 10;
+    const allResults: Question[] = [];
 
-    // 调用 Kimi API
-    const prompt = `请为以下题目生成准确的答案，返回 JSON 格式。
-
-【题目列表】：
-${questionsText}
+    for (let i = 0; i < questions.length; i += batchSize) {
+      const batch = questions.slice(i, i + batchSize);
+      
+      const prompt = `你是一个专业的题目解答专家。
+请为以下题目生成答案。
 
 要求：
-1. 注意：如果题目内包含 LaTeX 公式（如 $...$、\\[...\\] 等），答案中也请保持相同的公式格式
-2. 为每道题目提供准确、详细的答案
-3. 答案要简洁明了，直接回答问题
-4. 每道题目包含 question_text（题目内容）和 answer_text（答案内容）两个字段
-5. 一定要完整生成所有题目的答案，不要遗漏
-6. question_text 必须与输入的题目内容完全一致，不要修改
+1. 答案要准确、简洁、完整
+2. 如果题目包含 LaTeX 公式，答案中的公式也要用 LaTeX 格式
+3. 在 JSON 输出时，所有的 LaTeX 反斜杠 \\ 必须保持为双反斜杠（\\\\）
 
-【重要 - 选择题答案生成规则】：
-- 对于选择题，answer_text 只需要写正确选项的字母（如 "A"、"B"、"C"、"D" 或 "AB"、"ACD" 等多选答案）
-- 不要把选项的具体内容写入答案，只需写选项字母
-- 例如：答案是 A 选项，就写 "A" 而不是 "A. xxxxxxx"
-
-返回格式必须是纯 JSON 数组，格式如下：
-[
-  {
-    "question_text": "题目内容（与输入完全一致）",
-    "answer_text": "答案内容"
-  }
-]`;
-
-    const request: KimiRequest = {
-      model: 'moonshot-v1-8k',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.1,
-      max_tokens: 4000,
-    };
-
-    console.log('正在调用 Kimi API...');
-
-    const response = await fetch(KIMI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Kimi API 调用失败:', errorText);
-      return NextResponse.json(
-        { success: false, error: 'Kimi API 调用失败' },
-        { status: 500 }
-      );
+输出格式（必须是纯 JSON）：
+{
+  "questions": [
+    {
+      "question_text": "原题目",
+      "answer_text": "生成的答案"
     }
+  ]
+}
 
-    const data = await response.json();
-    console.log('Kimi API 返回状态:', data.choices?.[0]?.finish_reason);
-    console.log('Kimi API 返回 token 使用:', data.usage?.total_tokens);
+=== 题目列表 ===
+${batch.map((q: Question, idx: number) => `${idx + 1}. ${q.question_text}`).join('\n')}
 
-    const content = data.choices?.[0]?.message?.content;
+请直接输出 JSON，不要包含任何其他文字或代码块标记。`;
 
-    if (!content) {
-      console.error('AI 未返回内容，完整响应:', JSON.stringify(data));
-      return NextResponse.json(
-        { success: false, error: 'AI 未返回内容' },
-        { status: 500 }
-      );
-    }
+      // 调用 AI
+      const result = await callAI(config, [
+        { role: 'system', content: '你是一个专业的题目解答助手，擅长生成准确、详细的答案。' },
+        { role: 'user', content: prompt },
+      ], { maxTokens: 8000 });
 
-    console.log('AI 返回内容前 500 字符:', content?.slice(0, 500));
-
-    // 尝试多种 JSON 解析方式
-    let generatedQuestions: ParsedQuestion[] = [];
-
-    // 方式1: 尝试直接解析整个内容
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        console.log('方式1 直接解析成功，题目数:', parsed.length);
-        return NextResponse.json({ success: true, questions: parsed });
+      if (!result.success) {
+        console.error('批次处理失败:', result.error);
+        // 失败时保留原题目
+        allResults.push(...batch);
+        continue;
       }
-      console.log('方式1 解析结果不是数组:', typeof parsed);
-    } catch (e: any) {
-      console.log('方式1 直接解析失败:', e.message);
-    }
 
-    // 方式2: 尝试提取 JSON 数组 + LaTeX 修复
-    try {
-      let cleanContent = content
-        .replace(/```json\s*/g, '')
-        .replace(/```\s*/g, '')
-        .trim();
+      let content = result.content || '';
 
-      const arrayMatch = cleanContent.match(/\[[\s\S\n]*\]/);
-      if (arrayMatch) {
-        // 尝试标准解析
-        try {
-          const parsed = JSON.parse(arrayMatch[0]);
-          if (Array.isArray(parsed)) {
-            console.log('方式2 数组提取成功，题目数:', parsed.length);
-            return NextResponse.json({ success: true, questions: parsed });
-          }
-        } catch (e: any) {
-          // 标准解析失败，尝试修复 LaTeX 转义
-          console.log('方式2 标准解析失败，尝试修复 LaTeX:', e.message);
-          const fixedContent = fixLaTeXEscaping(arrayMatch[0]);
-          console.log('修复后内容前 200 字符:', fixedContent.slice(0, 200));
-          const parsed = JSON.parse(fixedContent);
-          if (Array.isArray(parsed)) {
-            console.log('方式2 修复后解析成功，题目数:', parsed.length);
-            return NextResponse.json({ success: true, questions: parsed });
-          }
-        }
+      // 清理 markdown 代码块标记
+      if (content.includes('```json')) {
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
       }
-    } catch (e: any) {
-      console.log('方式2 数组提取失败:', e.message);
-    }
-
-    // 方式3: 尝试提取所有 JSON 对象 + LaTeX 修复
-    try {
-      const objectMatches = content.match(/\{[^{}]*"question_text"[^{}]*"answer_text"[^{}]*\}/g);
-
-      if (objectMatches && objectMatches.length > 0) {
-        for (const match of objectMatches) {
-          try {
-            const obj = JSON.parse(match);
-            if (obj.question_text) {
-              generatedQuestions.push({
-                question_text: obj.question_text,
-                answer_text: obj.answer_text || null,
-              });
-            }
-          } catch {
-            // 尝试修复后解析
-            try {
-              const fixedMatch = fixLaTeXEscaping(match);
-              const obj = JSON.parse(fixedMatch);
-              if (obj.question_text) {
-                generatedQuestions.push({
-                  question_text: obj.question_text,
-                  answer_text: obj.answer_text || null,
-                });
-              }
-            } catch {
-              // 跳过无效的对象
-            }
-          }
-        }
-
-        if (generatedQuestions.length > 0) {
-          console.log('方式3 对象提取成功，题目数:', generatedQuestions.length);
-          return NextResponse.json({ success: true, questions: generatedQuestions });
-        }
+      if (content.includes('```')) {
+        content = content.replace(/```\s*/g, '');
       }
-    } catch (e: any) {
-      console.log('方式3 对象提取失败:', e.message);
+
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+          allResults.push(...parsed.questions);
+        } else {
+          allResults.push(...batch);
+        }
+      } catch {
+        console.error('JSON 解析失败，保留原题目');
+        allResults.push(...batch);
+      }
     }
 
-    console.error('所有解析方式都失败，无法解析内容');
+    console.log(`>>> 成功生成 ${allResults.length} 道题目的答案`);
+
     return NextResponse.json({
-      success: false,
-      error: 'AI 返回的格式无法解析，请重试或检查 API Key 是否正确'
+      success: true,
+      questions: allResults,
     });
-
   } catch (error: any) {
-    console.error('AI 生成答案错误:', error);
+    console.error('AI 生成答案失败:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'AI 生成答案失败' },
+      { success: false, error: error.message || '未知错误' },
       { status: 500 }
     );
   }

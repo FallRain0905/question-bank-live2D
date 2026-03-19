@@ -90,6 +90,9 @@ export default function ParsePage() {
 
   // AI 配置
   const [aiApiKey, setAiApiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState<'qwen' | 'kimi' | 'custom'>('qwen');
+  const [customApiUrl, setCustomApiUrl] = useState('');
+  const [customModel, setCustomModel] = useState('');
 
   // 题目编辑（使用单一结果）
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
@@ -140,18 +143,31 @@ export default function ParsePage() {
   };
 
   const loadAiConfig = () => {
-    const saved = localStorage.getItem('kimi_api_key');
-    if (saved) {
-      setAiApiKey(saved);
+    const savedProvider = localStorage.getItem('ai_provider') as 'qwen' | 'kimi' | 'custom' | null;
+    const savedKey = localStorage.getItem('ai_api_key');
+    const savedUrl = localStorage.getItem('custom_api_url');
+    const savedModel = localStorage.getItem('custom_model');
+    
+    if (savedProvider) setAiProvider(savedProvider);
+    if (savedKey) setAiApiKey(savedKey);
+    if (savedUrl) setCustomApiUrl(savedUrl);
+    if (savedModel) setCustomModel(savedModel);
+    
+    // 兼容旧配置
+    const oldKimiKey = localStorage.getItem('kimi_api_key');
+    if (oldKimiKey && !savedKey) {
+      setAiApiKey(oldKimiKey);
+      setAiProvider('kimi');
     }
   };
 
-  // 保存 API Key 到 localStorage
+  // 保存 AI 配置到 localStorage
   useEffect(() => {
-    if (aiApiKey) {
-      localStorage.setItem('kimi_api_key', aiApiKey);
-    }
-  }, [aiApiKey]);
+    localStorage.setItem('ai_provider', aiProvider);
+    localStorage.setItem('ai_api_key', aiApiKey);
+    localStorage.setItem('custom_api_url', customApiUrl);
+    localStorage.setItem('custom_model', customModel);
+  }, [aiProvider, aiApiKey, customApiUrl, customModel]);
 
   const checkAuth = async () => {
     const response = await fetch('/api/auth/session');
@@ -276,8 +292,13 @@ export default function ParsePage() {
 
   // AI 提取题目（单文件模式）
   const handleAiExtract = async () => {
-    if (!aiApiKey.trim()) {
-      alert('请先配置 Kimi API Key');
+    // 检查配置
+    if (aiProvider !== 'qwen' && !aiApiKey.trim()) {
+      alert('请先配置 API Key');
+      return;
+    }
+    if (aiProvider === 'custom' && (!customApiUrl.trim() || !customModel.trim())) {
+      alert('请先配置自定义 API URL 和模型名称');
       return;
     }
     if (!parseResult?.markdown) {
@@ -291,7 +312,10 @@ export default function ParsePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          provider: aiProvider,
           apiKey: aiApiKey,
+          apiUrl: customApiUrl,
+          model: customModel,
           markdown: parseResult.markdown,
         }),
       });
@@ -579,14 +603,71 @@ export default function ParsePage() {
 
         {/* AI 配置 */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <h3 className="font-medium text-yellow-900 mb-2">Kimi AI 配置</h3>
-          <input
-            type="password"
-            placeholder="输入 Kimi API Key (sk-...)"
-            value={aiApiKey}
-            onChange={(e) => setAiApiKey(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
-          />
+          <h3 className="font-medium text-yellow-900 mb-3">AI 模型配置</h3>
+          
+          {/* 模型选择 */}
+          <div className="mb-3">
+            <label className="block text-sm text-gray-700 mb-1">选择 AI 模型</label>
+            <select
+              value={aiProvider}
+              onChange={(e) => setAiProvider(e.target.value as 'qwen' | 'kimi' | 'custom')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+            >
+              <option value="qwen">千问大模型（推荐）</option>
+              <option value="kimi">Kimi AI</option>
+              <option value="custom">自定义模型</option>
+            </select>
+          </div>
+
+          {/* 千问提示 */}
+          {aiProvider === 'qwen' && (
+            <input
+              type="password"
+              placeholder="输入千问 API Key (sk-...)"
+              value={aiApiKey}
+              onChange={(e) => setAiApiKey(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+            />
+          )}
+
+          {/* Kimi API Key */}
+          {aiProvider === 'kimi' && (
+            <input
+              type="password"
+              placeholder="输入 Kimi API Key (sk-...)"
+              value={aiApiKey}
+              onChange={(e) => setAiApiKey(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+            />
+          )}
+
+          {/* 自定义配置 */}
+          {aiProvider === 'custom' && (
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="API URL (如: https://api.example.com/v1/chat/completions)"
+                value={customApiUrl}
+                onChange={(e) => setCustomApiUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+              />
+              <input
+                type="password"
+                placeholder="API Key"
+                value={aiApiKey}
+                onChange={(e) => setAiApiKey(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="模型名称 (如: gpt-4, claude-3-opus)"
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+              />
+            </div>
+          )}
+
           <p className="text-gray-500 text-sm mt-2">
             API Key 保存在浏览器本地，不会被发送到服务器
           </p>

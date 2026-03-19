@@ -276,9 +276,12 @@ export default function NotesPage() {
   const hotTags = availableTags.slice(0, 10);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gray-50">
+    <div className="min-h-screen relative">
+      {/* 背景 */}
+      <div className="fixed inset-0 pointer-events-none theme-bg-gradient" />
+      
       {/* 搜索栏 */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-md border-b border-brand-200 sticky top-16 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex flex-col gap-4">
             {/* 搜索输入 */}

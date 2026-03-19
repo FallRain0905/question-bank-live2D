@@ -53,8 +53,9 @@ export default function UserProfilePage() {
     if (profileData) {
       setProfileUser({
         id: profileData.id,
-        email: profileData.email || '', // user_profiles 可能不存储 email
+        email: profileData.email || '',
         username: profileData.username || profileData.display_name || '用户',
+        avatar_url: profileData.avatar_url || null,
         createdAt: profileData.created_at,
       });
     } else {
@@ -72,6 +73,7 @@ export default function UserProfilePage() {
           id: userId,
           email: '',
           username: '用户',
+          avatar_url: null,
           createdAt: new Date().toISOString(),
         });
       } else {
@@ -81,6 +83,7 @@ export default function UserProfilePage() {
           id: userId,
           email: '',
           username: displayName,
+          avatar_url: null,
           createdAt: new Date().toISOString(),
         });
       }
@@ -234,9 +237,12 @@ export default function UserProfilePage() {
   const isOwnProfile = currentUser && currentUser.id === userId;
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gray-50">
+    <div className="min-h-screen relative">
+      {/* 背景 */}
+      <div className="fixed inset-0 pointer-events-none theme-bg-gradient" />
+      
       {/* 用户信息头部 */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/80 backdrop-blur-md border-b border-brand-200 relative z-10">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center gap-6">
             {/* 头像 */}

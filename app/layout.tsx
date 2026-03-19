@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MobileTabBar from "@/components/MobileTabBar";
+import FloatingAIButton from "@/components/FloatingAIButton";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="bg-brand-950 text-brand-100">
+      <body className="bg-brand-50 text-brand-900">
         <ThemeProvider>
           <Navbar />
           <AnnouncementBanner />
@@ -33,6 +34,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <MobileTabBar />
+          <FloatingAIButton />
         </ThemeProvider>
       </body>
     </html>
