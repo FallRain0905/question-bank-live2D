@@ -441,22 +441,8 @@ export default function SearchPage() {
                 className="block group"
               >
                 <div className="bg-white/80 backdrop-blur-sm border border-brand-200 rounded-xl p-5 hover:border-brand-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
-                  {/* 悬停时显示的快捷操作 */}
-                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2 z-10">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // 快速预览 - 跳转到详情页
-                        window.open(`/questions/${question.id}`, '_blank');
-                      }}
-                      className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:bg-brand-50 transition-colors"
-                      title="快速预览"
-                    >
-                      <svg className="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
+                  {/* 悬停时显示的收藏按钮 */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                     <button
                       onClick={(e) => {
                         e.preventDefault();

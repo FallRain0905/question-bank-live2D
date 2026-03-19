@@ -5,33 +5,89 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { question } = await req.json();
+    const { question, history, image } = await req.json();
 
-    if (!question) {
-      return NextResponse.json({ answer: '请输入问题' });
+    if (!question && !image) {
+      return NextResponse.json({ answer: '请输入问题或上传图片' });
     }
 
-    // 简单的 AI 模拟响应
-    // 实际项目中这里应该调用真实的 AI API
-    const answers: Record<string, string> = {
-      '你好': '你好！有什么可以帮助你的吗？',
-      '你是谁': '我是你的学习助手，可以帮助你解答学习中的问题。',
-      '怎么用': '你可以直接输入问题，我会尽力帮你解答。支持题目解答、知识点讲解等。',
-    };
-
-    let answer = answers[question];
+    // 获取千问 API Key
+    const apiKey = process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
     
-    if (!answer) {
-      // 默认回复
-      answer = `这是一个很好的问题！"${question}"\n\n很抱歉，我目前还在学习中，暂时无法给出详细解答。建议你：\n\n1. 查看相关教材或课堂笔记\n2. 咨询老师或同学\n3. 稍后再问我，我会不断学习进步的！`;
+    if (!apiKey) {
+      return NextResponse.json({ 
+        answer: 'AI 服务尚未配置，请联系管理员。' 
+      });
     }
+
+    // 构建消息
+    const messages: any[] = history || [];
+    
+    // 如果有图片，使用视觉模型
+    if (image) {
+      messages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: {
+              url: image
+            }
+          },
+          {
+            type: 'text',
+            text: question || '请描述这张图片中的内容'
+          }
+        ]
+      });
+    } else {
+      messages.push({
+        role: 'user',
+        content: question
+      });
+    }
+
+    // 选择模型（有图片用视觉模型）
+    const model = image ? 'qwen-vl-max' : 'qwen3-5-flash';
+
+    // 调用千问 API
+    const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个友好的学习助手，专门帮助学生理解题目和知识点。回答要简洁明了，适合学生理解。如果涉及数学公式，请使用 LaTeX 格式。'
+          },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('千问 API 错误:', errorText);
+      return NextResponse.json({ 
+        answer: 'AI 服务暂时不可用，请稍后再试。' 
+      });
+    }
+
+    const data = await response.json();
+    const answer = data.choices?.[0]?.message?.content || '抱歉，我暂时无法回答这个问题。';
 
     return NextResponse.json({ answer });
 
   } catch (error: any) {
     console.error('AI Assistant error:', error);
     return NextResponse.json({ 
-      answer: '抱歉，我遇到了一些问题，请稍后再试。' 
+      answer: '发生错误，请稍后重试。' 
     });
   }
 }

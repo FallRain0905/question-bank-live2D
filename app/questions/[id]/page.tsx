@@ -372,7 +372,7 @@ export default function QuestionDetailPage() {
               <button
                 onClick={handleFavorite}
                 className={`p-2 rounded-lg transition ${
-                  isFavorited ? 'text-yellow-500 bg-yellow-50' : 'text-brand-500 hover:text-yellow-500 hover:bg-brand-950'
+                  isFavorited ? 'text-yellow-500 bg-yellow-50' : 'text-brand-500 hover:text-yellow-500 hover:bg-brand-100'
                 }`}
                 title="收藏"
               >
@@ -381,7 +381,7 @@ export default function QuestionDetailPage() {
               {isOwner && (
                 <button
                   onClick={handleDelete}
-                  className="p-2 text-brand-500 hover:text-red-400 hover:bg-brand-950 rounded-lg transition"
+                  className="p-2 text-brand-500 hover:text-red-400 hover:bg-brand-100 rounded-lg transition"
                   title="删除"
                 >
                   🗑️
@@ -401,7 +401,7 @@ export default function QuestionDetailPage() {
 
           {/* 题目 */}
           <div className="mb-6">
-            <h2 className="text-lg font-medium text-brand-50 mb-3">题目</h2>
+            <h2 className="text-lg font-medium text-brand-800 mb-3">题目</h2>
 
             {/* 文档预览和下载 */}
             {question.question_file_url && (
@@ -449,7 +449,7 @@ export default function QuestionDetailPage() {
 
           {/* 答案 */}
           <div className="border-t border-brand-900 pt-6">
-            <h2 className="text-lg font-medium text-brand-50 mb-3">答案</h2>
+            <h2 className="text-lg font-medium text-brand-800 mb-3">答案</h2>
 
             {/* 答案文档预览和下载 */}
             {question.answer_file_url && (
@@ -512,7 +512,7 @@ export default function QuestionDetailPage() {
 
         {/* 评论区 */}
         <div className="bg-brand-800/50 rounded-xl shadow-sm border border-brand-800 p-6">
-          <h3 className="text-lg font-medium text-brand-50 mb-4">评论 ({comments.length})</h3>
+          <h3 className="text-lg font-medium text-brand-800 mb-4">评论 ({comments.length})</h3>
 
           {/* 评论输入 */}
           {user ? (
@@ -534,7 +534,7 @@ export default function QuestionDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="mb-6 p-4 bg-brand-950 rounded-lg text-center">
+            <div className="mb-6 p-4 bg-brand-100 rounded-lg text-center">
               <Link href="/login" className="text-brand-500 hover:text-brand-600">
                 登录后参与评论
               </Link>

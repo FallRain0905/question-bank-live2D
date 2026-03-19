@@ -1,30 +1,111 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  image?: string;
+}
 
 export default function FloatingAIButton() {
   const [isOpen, setIsOpen] = useState(false);
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleAsk = async () => {
-    if (!question.trim()) return;
-    
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleScreenshot = async () => {
+    try {
+      // 使用浏览器截图 API
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { mediaSource: 'screen' } as any
+      });
+      
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0);
+      
+      // 停止录屏
+      stream.getTracks().forEach(track => track.stop());
+      
+      // 转换为 base64
+      const imageData = canvas.toDataURL('image/png');
+      setScreenshot(imageData);
+      
+    } catch (error) {
+      console.error('截图失败:', error);
+      alert('截图失败，请确保允许屏幕共享');
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setScreenshot(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() && !screenshot) return;
+
+    const userMessage: Message = {
+      role: 'user',
+      content: input,
+      image: screenshot || undefined
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setScreenshot(null);
     setLoading(true);
-    setAnswer('');
-    
+
     try {
       const response = await fetch('/api/ai-assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({
+          question: input,
+          history: messages.map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          image: screenshot
+        }),
       });
-      
+
       const data = await response.json();
-      setAnswer(data.answer || '抱歉，我暂时无法回答这个问题。');
+      
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.answer || '抱歉，我暂时无法回答这个问题。'
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      setTimeout(scrollToBottom, 100);
+
     } catch (error) {
-      setAnswer('网络错误，请稍后重试。');
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '网络错误，请稍后重试。'
+      }]);
     } finally {
       setLoading(false);
     }
@@ -67,41 +148,105 @@ export default function FloatingAIButton() {
             </h3>
           </div>
           
-          {/* 内容区 */}
-          <div className="p-4 max-h-80 overflow-y-auto">
-            {answer ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-brand-50 rounded-lg text-brand-700 text-sm leading-relaxed">
-                  {answer}
-                </div>
-                <button
-                  onClick={() => { setAnswer(''); setQuestion(''); }}
-                  className="text-sm text-brand-500 hover:text-brand-600"
-                >
-                  再问一个问题
-                </button>
+          {/* 消息列表 */}
+          <div className="h-64 overflow-y-auto p-4 space-y-3">
+            {messages.length === 0 ? (
+              <div className="text-center text-brand-500 text-sm py-8">
+                <p className="mb-2">👋 你好！我是你的学习助手</p>
+                <p className="text-xs text-brand-400">可以问我题目、知识点，或者截图提问</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-brand-600 mb-2">
-                  有什么不懂的？问我试试～
-                </p>
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="输入你的问题..."
-                  className="w-full px-3 py-2 border border-brand-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none resize-none"
-                  rows={3}
-                />
-                <button
-                  onClick={handleAsk}
-                  disabled={loading || !question.trim()}
-                  className="w-full py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? '思考中...' : '提问'}
-                </button>
+              messages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-brand-500 text-white' 
+                      : 'bg-brand-100 text-brand-800'
+                  }`}>
+                    {msg.image && (
+                      <img src={msg.image} alt="截图" className="max-w-full rounded mb-2" />
+                    )}
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-brand-100 text-brand-800 rounded-lg px-3 py-2 text-sm">
+                  <span className="animate-pulse">思考中...</span>
+                </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* 截图预览 */}
+          {screenshot && (
+            <div className="px-4 pb-2">
+              <div className="relative inline-block">
+                <img src={screenshot} alt="预览" className="h-16 rounded border border-brand-200" />
+                <button
+                  onClick={() => setScreenshot(null)}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* 输入区 */}
+          <div className="p-4 border-t border-brand-100">
+            <div className="flex gap-2 mb-2">
+              {/* 截图按钮 */}
+              <button
+                onClick={handleScreenshot}
+                className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
+                title="截图"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+              
+              {/* 上传图片按钮 */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
+                title="上传图片"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !loading && handleSend()}
+                placeholder="输入问题..."
+                className="flex-1 px-3 py-2 border border-brand-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none"
+              />
+              <button
+                onClick={handleSend}
+                disabled={loading || (!input.trim() && !screenshot)}
+                className="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed transition-colors"
+              >
+                发送
+              </button>
+            </div>
           </div>
         </div>
       )}
