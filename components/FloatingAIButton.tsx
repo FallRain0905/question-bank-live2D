@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,6 +22,46 @@ export default function FloatingAIButton() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // 渲染 LaTeX 公式
+  const renderLatex = (text: string) => {
+    // 处理行内公式 $...$
+    let result = text.replace(/\$([^$]+)\$/g, (match, latex) => {
+      try {
+        return katex.renderToString(latex, { throwOnError: false });
+      } catch {
+        return match;
+      }
+    });
+    
+    // 处理块级公式 $$...$$
+    result = result.replace(/\$\$([^$]+)\$\$/g, (match, latex) => {
+      try {
+        return katex.renderToString(latex, { throwOnError: false, displayMode: true });
+      } catch {
+        return match;
+      }
+    });
+    
+    // 处理 \[...\] 和 \(...\)
+    result = result.replace(/\\\[([\s\S]+?)\\\]/g, (match, latex) => {
+      try {
+        return katex.renderToString(latex, { throwOnError: false, displayMode: true });
+      } catch {
+        return match;
+      }
+    });
+    
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, latex) => {
+      try {
+        return katex.renderToString(latex, { throwOnError: false });
+      } catch {
+        return match;
+      }
+    });
+    
+    return result;
   };
 
   const handleScreenshot = async () => {
@@ -215,7 +257,12 @@ export default function FloatingAIButton() {
                     {msg.image && (
                       <img src={msg.image} alt="截图" className="max-w-full rounded mb-2" />
                     )}
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <div 
+                      className="whitespace-pre-wrap prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: msg.role === 'assistant' ? renderLatex(msg.content) : msg.content 
+                      }}
+                    />
                   </div>
                 </div>
               ))
