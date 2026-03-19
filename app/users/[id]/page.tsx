@@ -34,6 +34,50 @@ export default function UserProfilePage() {
     loadUserData();
   }, [userId]);
 
+  useEffect(() => {
+    if (currentUser) {
+      loadFavorites();
+    }
+  }, [currentUser, userId]);
+
+  const loadFavorites = async () => {
+    const supabase = getSupabase();
+    
+    // 获取收藏的题目
+    const { data: favQuestions } = await supabase
+      .from('favorites')
+      .select('target_id')
+      .eq('user_id', userId)
+      .eq('target_type', 'question');
+
+    if (favQuestions && favQuestions.length > 0) {
+      const questionIds = favQuestions.map(f => f.target_id);
+      const { data: questionsData } = await supabase
+        .from('questions')
+        .select('*, tags(id, name)')
+        .in('id', questionIds)
+        .eq('status', 'approved');
+      setFavorites(prev => ({ ...prev, questions: questionsData || [] }));
+    }
+
+    // 获取收藏的笔记
+    const { data: favNotes } = await supabase
+      .from('favorites')
+      .select('target_id')
+      .eq('user_id', userId)
+      .eq('target_type', 'note');
+
+    if (favNotes && favNotes.length > 0) {
+      const noteIds = favNotes.map(f => f.target_id);
+      const { data: notesData } = await supabase
+        .from('notes')
+        .select('*, tags(id, name)')
+        .in('id', noteIds)
+        .eq('status', 'approved');
+      setFavorites(prev => ({ ...prev, notes: notesData || [] }));
+    }
+  };
+
   const checkUser = async () => {
     const { data: { user } } = await getSupabase().auth.getUser();
     setCurrentUser(user);
@@ -98,39 +142,6 @@ export default function UserProfilePage() {
         .eq('following_id', userId)
         .maybeSingle();
       setIsFollowing(!!followData);
-
-      // 获取收藏内容
-      const { data: favQuestions } = await supabase
-        .from('favorites')
-        .select('target_id')
-        .eq('user_id', userId)
-        .eq('target_type', 'question');
-
-      const { data: favNotes } = await supabase
-        .from('favorites')
-        .select('target_id')
-        .eq('user_id', userId)
-        .eq('target_type', 'note');
-
-      if (favQuestions && favQuestions.length > 0) {
-        const questionIds = favQuestions.map(f => f.target_id);
-        const { data: questionsData } = await supabase
-          .from('questions')
-          .select('*, tags(id, name)')
-          .in('id', questionIds)
-          .eq('status', 'approved');
-        setFavorites(prev => ({ ...prev, questions: questionsData || [] }));
-      }
-
-      if (favNotes && favNotes.length > 0) {
-        const noteIds = favNotes.map(f => f.target_id);
-        const { data: notesData } = await supabase
-          .from('notes')
-          .select('*, tags(id, name)')
-          .in('id', noteIds)
-          .eq('status', 'approved');
-        setFavorites(prev => ({ ...prev, notes: notesData || [] }));
-      }
     }
 
     // 获取用户上传的内容
@@ -246,13 +257,23 @@ export default function UserProfilePage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center gap-6">
             {/* 头像 */}
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl overflow-hidden ${
-              profileUser.avatar_url ? '' : 'bg-blue-100'
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl overflow-hidden border-4 border-white shadow-lg ${
+              profileUser.avatar_url ? '' : 'bg-gradient-to-br from-brand-400 to-brand-600'
             }`}>
               {profileUser.avatar_url ? (
-                <img src={profileUser.avatar_url} alt="头像" className="w-full h-full object-cover" />
+                <img 
+                  src={profileUser.avatar_url} 
+                  alt="头像" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
               ) : (
-                <span>👤</span>
+                <span className="text-white text-3xl font-medium">
+                  {(profileUser.username || '用户').charAt(0).toUpperCase()}
+                </span>
               )}
             </div>
 
