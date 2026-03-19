@@ -14,6 +14,8 @@ export async function POST(req: NextRequest) {
     // 获取千问 API Key
     const apiKey = process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
     
+    console.log('API Key 长度:', apiKey.length);
+    
     if (!apiKey) {
       return NextResponse.json({ 
         answer: 'AI 服务尚未配置，请联系管理员。' 
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 选择模型（有图片用视觉模型）
-    const model = image ? 'qwen-vl-max' : 'qwen3-5-flash';
+    const model = image ? 'qwen-vl-max' : 'qwen3.5-flash';
 
     // 调用千问 API
     const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
