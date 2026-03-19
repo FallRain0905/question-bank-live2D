@@ -6,6 +6,8 @@ import Link from 'next/link';
 import type { QuestionWithTags } from '@/types';
 import type { SearchHistory } from '@/types';
 
+type SortOption = 'newest' | 'oldest' | 'popular';
+
 // 骨架屏组件
 function SkeletonCard() {
   return (
@@ -223,6 +225,12 @@ export default function SearchPage() {
     }
 
     setFilteredQuestions(filtered);
+  };
+
+  const handleFavorite = async (questionId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    // TODO: 实现收藏功能
+    alert('收藏功能开发中');
   };
 
   const handleSearch = (query: string) => {

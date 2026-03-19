@@ -77,7 +77,7 @@ ${markdown}
     const result = await callAI(config, [
       { role: 'system', content: '你是一个专业的题目提取助手，擅长识别和结构化各种格式的题目。' },
       { role: 'user', content: prompt },
-    ], 8000);
+    ], { maxTokens: 8000 });
 
     if (!result.success) {
       return NextResponse.json(
@@ -100,7 +100,7 @@ ${markdown}
     content = fixLaTeXEscaping(content);
 
     console.log('AI 返回内容长度:', content.length);
-    console.log('AI 返回内容预览:', content.substring(0, 200) '...');
+    console.log('AI 返回内容预览:', content.substring(0, 200) + '...');
 
     // 解析 JSON
     let parsed;

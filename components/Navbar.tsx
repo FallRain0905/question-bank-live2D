@@ -4,16 +4,14 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import type { UserProfile } from '@/types';
 import { getSupabase, clearSupabaseCache } from '@/lib/supabase';
-import { themes, getCurrentTheme, setCurrentTheme, initTheme, getThemeList, type Theme } from '@/lib/theme';
+import { themes, getCurrentTheme, setCurrentTheme, initTheme, type Theme } from '@/lib/theme';
 
 export default function Navbar() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState<'discover' | 'create' | 'tools' | 'admin' | 'user' | 'theme' | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTheme, setCurrentThemeState] = useState<Theme>(getCurrentTheme());
   const [imageBackground, setImageBackground] = useState<string | null>(null);
-  const [backgroundOpacity, setBackgroundOpacity] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isMounted = useRef(true);
