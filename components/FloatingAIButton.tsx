@@ -23,32 +23,63 @@ export default function FloatingAIButton() {
 
   const handleScreenshot = async () => {
     try {
-      // 使用浏览器截图 API
+      // 检查浏览器是否支持
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        alert('您的浏览器不支持屏幕截图功能，请使用上传图片功能');
+        return;
+      }
+
+      // 请求屏幕共享权限
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: 'screen' } as any
+        video: true,
       });
-      
+
+      // 创建 video 元素来捕获画面
       const video = document.createElement('video');
       video.srcObject = stream;
-      await video.play();
+      video.autoplay = true;
       
+      // 等待视频加载
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => {
+          video.play();
+          resolve();
+        };
+      });
+
+      // 等待一帧确保画面已渲染
+      await new Promise(r => setTimeout(r, 100));
+
+      // 绘制到 canvas
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
       const ctx = canvas.getContext('2d');
-      ctx?.drawImage(video, 0, 0);
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+      }
       
-      // 停止录屏
+      // 停止所有轨道
       stream.getTracks().forEach(track => track.stop());
       
       // 转换为 base64
       const imageData = canvas.toDataURL('image/png');
       setScreenshot(imageData);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('截图失败:', error);
-      alert('截图失败，请确保允许屏幕共享');
+      
+      // 根据错误类型给出提示
+      if (error.name === 'NotAllowedError') {
+        alert('截图需要您授权屏幕共享权限。请在弹出的对话框中选择要分享的屏幕/窗口/标签页。');
+      } else if (error.name === 'NotSupportedError') {
+        alert('您的浏览器不支持此功能，请使用"上传图片"按钮代替。');
+      } else if (error.name === 'NotFoundError') {
+        alert('未找到可用的屏幕设备');
+      } else {
+        alert('截图失败: ' + (error.message || '请重试或使用上传图片功能'));
+      }
     }
   };
 
@@ -153,7 +184,7 @@ export default function FloatingAIButton() {
             {messages.length === 0 ? (
               <div className="text-center text-brand-500 text-sm py-8">
                 <p className="mb-2">👋 你好！我是你的学习助手</p>
-                <p className="text-xs text-brand-400">可以问我题目、知识点，或者截图提问</p>
+                <p className="text-xs text-brand-400">可以问我题目、知识点，或者截图/上传图片提问</p>
               </div>
             ) : (
               messages.map((msg, i) => (
@@ -188,7 +219,7 @@ export default function FloatingAIButton() {
                 <img src={screenshot} alt="预览" className="h-16 rounded border border-brand-200" />
                 <button
                   onClick={() => setScreenshot(null)}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
                 >
                   ×
                 </button>
@@ -203,7 +234,7 @@ export default function FloatingAIButton() {
               <button
                 onClick={handleScreenshot}
                 className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
-                title="截图"
+                title="屏幕截图"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
