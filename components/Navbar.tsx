@@ -24,6 +24,7 @@ export default function Navbar() {
     if (savedBg) {
       setImageBackground(savedBg);
       document.body.style.setProperty('--bg-image', `url(${savedBg})`);
+      document.body.classList.add('has-bg-image');
     }
   }, []);
 
