@@ -241,6 +241,9 @@ export default function Sidebar() {
                   {user.is_admin && (
                     <NavItem item={{ href: '/admin/tags', label: '标签管理', icon: '🏷️' }} />
                   )}
+                  {user.is_admin && (
+                    <NavItem item={{ href: '/admin/settings', label: '系统配置', icon: '⚙️' }} />
+                  )}
                   <NavItem item={{ href: '/admin', label: '内容审核', icon: '✅' }} />
                 </>
               )}

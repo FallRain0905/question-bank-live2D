@@ -34,7 +34,7 @@ export default function FloatingAIButton() {
         return match;
       }
     });
-    
+
     // 处理块级公式 $$...$$
     result = result.replace(/\$\$([^$]+)\$\$/g, (match, latex) => {
       try {
@@ -43,7 +43,7 @@ export default function FloatingAIButton() {
         return match;
       }
     });
-    
+
     // 处理 \[...\] 和 \(...\)
     result = result.replace(/\\\[([\s\S]+?)\\\]/g, (match, latex) => {
       try {
@@ -52,7 +52,7 @@ export default function FloatingAIButton() {
         return match;
       }
     });
-    
+
     result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, latex) => {
       try {
         return katex.renderToString(latex, { throwOnError: false });
@@ -60,7 +60,7 @@ export default function FloatingAIButton() {
         return match;
       }
     });
-    
+
     return result;
   };
 
@@ -81,7 +81,7 @@ export default function FloatingAIButton() {
       const video = document.createElement('video');
       video.srcObject = stream;
       video.autoplay = true;
-      
+
       // 等待视频加载
       await new Promise<void>((resolve) => {
         video.onloadedmetadata = () => {
@@ -97,22 +97,22 @@ export default function FloatingAIButton() {
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0);
       }
-      
+
       // 停止所有轨道
       stream.getTracks().forEach(track => track.stop());
-      
+
       // 转换为 base64
       const imageData = canvas.toDataURL('image/png');
       setScreenshot(imageData);
-      
+
     } catch (error: any) {
       console.error('截图失败:', error);
-      
+
       // 根据错误类型给出提示
       if (error.name === 'NotAllowedError') {
         alert('截图需要您授权屏幕共享权限。请在弹出的对话框中选择要分享的屏幕/窗口/标签页。');
@@ -166,7 +166,7 @@ export default function FloatingAIButton() {
       });
 
       const data = await response.json();
-      
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.answer || '抱歉，我暂时无法回答这个问题。'
@@ -176,10 +176,8 @@ export default function FloatingAIButton() {
       setTimeout(scrollToBottom, 100);
 
     } catch (error) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: '网络错误，请稍后重试。'
-      }]);
+      console.error('登录/注册失败:', error);
+      alert('网络错误，请稍后重试。');
     } finally {
       setLoading(false);
     }
@@ -187,22 +185,22 @@ export default function FloatingAIButton() {
 
   return (
     <>
-      {/* 浮动按钮 */}
+      {/* 浮动按钮 - 固定位置 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+        className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
         title="AI 助手"
       >
         {isOpen ? (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2-2H5a2 2 0 00-2-2V9z" />
           </svg>
         )}
-        
+
         {/* 脉冲动画 */}
         {!isOpen && (
           <span className="absolute inset-0 rounded-full bg-brand-500 animate-ping opacity-30" />
@@ -211,36 +209,28 @@ export default function FloatingAIButton() {
 
       {/* 对话框 */}
       {isOpen && (
-        <div className={`fixed z-50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-300 ${
-          isExpanded 
-            ? 'bottom-24 right-6 w-[600px] h-[500px]' 
-            : 'bottom-24 right-6 w-80 sm:w-96'
-        }`}>
+        <div className="fixed z-50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-300 bottom-24 right-6 w-96 sm:w-[600px]">
           {/* 标题栏 */}
           <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 flex items-center justify-between">
             <h3 className="text-white font-medium flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               AI 学习助手
             </h3>
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => setIsOpen(false)}
               className="text-white/80 hover:text-white transition-colors"
-              title={isExpanded ? '缩小' : '放大'}
+              title="关闭"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isExpanded ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                )}
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 6L6 18M18 6l12 12M6 6l12 12" />
               </svg>
             </button>
           </div>
-          
+
           {/* 消息列表 */}
-          <div className={`${isExpanded ? 'h-[360px]' : 'h-64'} overflow-y-auto p-4 space-y-3`}>
+          <div className="h-[500px] overflow-y-auto p-4 space-y-3">
             {messages.length === 0 ? (
               <div className="text-center text-brand-500 text-sm py-8">
                 <p className="mb-2">👋 你好！我是你的学习助手</p>
@@ -250,17 +240,17 @@ export default function FloatingAIButton() {
               messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-brand-500 text-white' 
+                    msg.role === 'user'
+                      ? 'bg-brand-500 text-white'
                       : 'bg-brand-100 text-brand-800'
                   }`}>
                     {msg.image && (
                       <img src={msg.image} alt="截图" className="max-w-full rounded mb-2" />
                     )}
-                    <div 
+                    <div
                       className="whitespace-pre-wrap prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: msg.role === 'assistant' ? renderLatex(msg.content) : msg.content 
+                      dangerouslySetInnerHTML={{
+                        __html: msg.role === 'assistant' ? renderLatex(msg.content) : msg.content
                       }}
                     />
                   </div>
@@ -284,54 +274,37 @@ export default function FloatingAIButton() {
                 <img src={screenshot} alt="预览" className="h-16 rounded border border-brand-200" />
                 <button
                   onClick={() => setScreenshot(null)}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
                 >
                   ×
                 </button>
               </div>
             </div>
           )}
-          
+
           {/* 输入区 */}
           <div className="p-4 border-t border-brand-100">
             <div className="flex gap-2 mb-2">
-              {/* 放大/缩小按钮 */}
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
-                title={isExpanded ? "缩小" : "放大"}
-              >
-                {isExpanded ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                )}
-              </button>
-              
               {/* 截图按钮 */}
               <button
                 onClick={handleScreenshot}
                 className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
                 title="屏幕截图"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 00-2 2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
-              
+
               {/* 上传图片按钮 */}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors"
                 title="上传图片"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z" />
                 </svg>
               </button>
               <input
@@ -342,7 +315,7 @@ export default function FloatingAIButton() {
                 className="hidden"
               />
             </div>
-            
+
             <div className="flex gap-2">
               <input
                 type="text"

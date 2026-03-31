@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getSupabase } from '@/lib/supabase';
 
 interface ClassApprovalRequest {
@@ -205,9 +206,20 @@ export default function AdminClassesPage() {
     <div className="min-h-screen bg-brand-950">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-brand-50">班级创建审核</h1>
-            <p className="text-brand-400 mt-1">审核用户提交的班级创建申请</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-3xl font-bold text-brand-50">班级创建审核</h1>
+              <p className="text-brand-400 mt-1">审核用户提交的班级创建申请</p>
+            </div>
+            {/* 系统配置按钮 - 仅超级管理员可见 */}
+            {isAdmin && (
+              <Link
+                href="/admin/settings"
+                className="px-3 py-1.5 bg-brand-700 text-brand-200 rounded-lg text-sm font-medium hover:bg-brand-600 transition flex items-center gap-1"
+              >
+                ⚙️ 系统配置
+              </Link>
+            )}
           </div>
           <div className="flex gap-4">
             <div className="bg-brand-800/50 border border-brand-700 rounded-lg px-4 py-2">

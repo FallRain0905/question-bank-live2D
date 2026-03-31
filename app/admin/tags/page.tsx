@@ -317,11 +317,20 @@ export default function TagsAdminPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* 页头 */}
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">标签管理</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              共 {tags.length} 个标签
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">标签管理</h1>
+              <p className="text-gray-500 text-sm mt-1">
+                共 {tags.length} 个标签
+              </p>
+            </div>
+            {/* 系统配置按钮 */}
+            <Link
+              href="/admin/settings"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition flex items-center gap-1"
+            >
+              ⚙️ 系统配置
+            </Link>
           </div>
           <div className="flex gap-3">
             <Link

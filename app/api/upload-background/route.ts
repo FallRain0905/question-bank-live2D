@@ -105,6 +105,11 @@ export async function POST(req: NextRequest) {
 
     console.log('上传成功! 公开 URL:', publicUrl);
 
+    // 保存背景图片 URL 到 localStorage（与导航栏统一）
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('background-image-url', publicUrl);
+    }
+
     return NextResponse.json({
       success: true,
       url: publicUrl,

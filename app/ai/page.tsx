@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 
+interface Dimension {
+  width: number;
+  height: number;
+}
+
 // Types
 export interface ChatMessage {
   id: string;
@@ -38,8 +43,24 @@ export default function AIPage() {
   const [selectedModel, setSelectedModel] = useState('qwen-vl-max-latest');
   const [showModelSelect, setShowModelSelect] = useState(false);
 
+  // 可调节尺寸功能
+  const [isResizing, setIsResizing] = useState(false);
+  const [chatWidth, setChatWidth] = useState(384);
+  const [chatHeight, setChatHeight] = useState(512);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 从 localStorage 加载尺寸设置
+  useEffect(() => {
+    const savedDimensions = localStorage.getItem('ai-chat-dimensions');
+    if (savedDimensions) {
+      const dims = JSON.parse(savedDimensions) as Dimension;
+      setChatWidth(dims.width);
+      setChatHeight(dims.height);
+    }
+  }, []);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
@@ -297,6 +318,65 @@ export default function AIPage() {
     </svg>
   );
 
+  const ResizeIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 3h6v6h-6M9 9h6M9 3h6v6h-6m6 6h-6v-6h6" />
+    </svg>
+  );
+
+  // 保存尺寸到 localStorage
+  const saveDimensions = () => {
+    localStorage.setItem('ai-chat-dimensions', JSON.stringify({ width: chatWidth, height: chatHeight }));
+  };
+
+  // 开始调整尺寸
+  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: rect.width,
+      height: rect.height
+    });
+    setIsResizing(true);
+  };
+
+  // 调整尺寸中
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!isResizing) return;
+
+    const deltaX = e.clientX - resizeStart.x;
+    const deltaY = e.clientY - resizeStart.y;
+
+    const newWidth = Math.max(300, Math.min(1200, resizeStart.width + deltaX)); // 最小300px，最大1200px
+    const newHeight = Math.max(400, Math.min(900, resizeStart.height + deltaY)); // 最小400px，最大900px
+
+    setChatWidth(newWidth);
+    setChatHeight(newHeight);
+  };
+
+  // 结束调整尺寸
+  const handleResizeEnd = () => {
+    if (isResizing) {
+      setIsResizing(false);
+      saveDimensions();
+    }
+  };
+
+  // 添加鼠标事件监听
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [isResizing, resizeStart]);
+
   const BotIcon = () => (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -316,7 +396,9 @@ export default function AIPage() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div
+      className={`flex flex-col h-[calc(100vh-64px)] ${isResizing ? 'select-none' : ''}`}
+    >
       {/* Header */}
       <div className="glass-card mx-4 mt-4 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -356,9 +438,24 @@ export default function AIPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar - Session History */}
         <div className="hidden lg:block w-64 border-r border-brand-800 bg-brand-900 overflow-y-auto">
+          {/* 调整尺寸按钮 */}
+          <button
+            onClick={() => {
+              // 重置到默认尺寸
+              setChatWidth(384);
+              setChatHeight(512);
+              saveDimensions();
+            }}
+            className="fixed top-20 right-4 lg:right-[280px] glass-button p-2 rounded-lg z-50 flex items-center gap-2 hover:bg-brand-800 transition"
+            title="重置对话框尺寸"
+          >
+            <ResizeIcon />
+            <span className="text-xs">重置尺寸</span>
+          </button>
+        </div>
           <div className="p-4">
             <button
               onClick={createNewSession}
@@ -395,7 +492,19 @@ export default function AIPage() {
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div
+          className="flex-1 flex flex-col overflow-hidden relative"
+          style={{ width: `${chatWidth}px`, height: `${chatHeight}px` }}
+        >
+          {/* 右下角尺寸调整手柄 */}
+          <div
+            onMouseDown={handleResizeStart}
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize hover:bg-brand-800 transition flex items-center justify-center rounded-tl z-10"
+            title="拖动调整尺寸"
+          >
+            <div className="w-0.5 h-0.5 bg-brand-400 rounded-full"></div>
+            <div className="w-0.5 h-3 bg-brand-400 rounded"></div>
+          </div>
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {currentSession?.messages.length === 0 ? (
@@ -434,7 +543,7 @@ export default function AIPage() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-brand-800 bg-brand-900">
+          <div className="p-4 border-t border-brand-800 bg-brand-900 flex-shrink-0">
             {uploadedImages.length > 0 && (
               <div className="mb-3 flex items-center gap-3">
                 <div className="relative">

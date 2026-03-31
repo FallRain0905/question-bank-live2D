@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getSupabase } from '@/lib/supabase';
 import { getFileIcon, formatFileSize, deleteFile } from '@/lib/upload';
 import type { QuestionWithTags, NoteWithTags } from '@/types';
@@ -405,9 +406,20 @@ export default function AdminPage() {
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isAdmin ? '审核管理' : '班级审核'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {isAdmin ? '审核管理' : '班级审核'}
+              </h1>
+              {/* 系统配置按钮 - 仅超级管理员可见 */}
+              {isAdmin && (
+                <Link
+                  href="/admin/settings"
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition flex items-center gap-1"
+                >
+                  ⚙️ 系统配置
+                </Link>
+              )}
+            </div>
             <button
               onClick={loadData}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
