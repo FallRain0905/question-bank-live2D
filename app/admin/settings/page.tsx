@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabase, createSupabaseServerClient } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 
 interface SystemSetting {
     key: string;

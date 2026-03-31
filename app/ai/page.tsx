@@ -600,6 +600,7 @@ export default function AIPage() {
               </button>
             </div>
           </div>
+        </div>
 
       {/* Mobile New Session Button */}
       <button
