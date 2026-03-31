@@ -18,7 +18,6 @@ export default function AdminSettingsPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<Map<string, string>>(new Map());
     const [errors, setErrors] = useState<Map<string, string>>(new Map());
 
     // Nextcloud 配置
@@ -64,8 +63,6 @@ export default function AdminSettingsPage() {
             (data || []).forEach((setting: SystemSetting) => {
                 settingsMap.set(setting.key, setting.value || '');
             });
-
-            setSettings(settingsMap);
 
             // 填充表单
             setNextcloudUrl(settingsMap.get('nextcloud_url') || '');
