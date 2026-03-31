@@ -313,22 +313,23 @@ export default function SearchPage() {
   const hotTags = availableTags.slice(0, 10);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative pb-20 sm:pb-0">
       {/* 背景 */}
       <div className="fixed inset-0 pointer-events-none theme-bg-gradient" />
       
       {/* 搜索栏 */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-brand-200 sticky top-16 z-40 px-4 py-2 sm:py-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-1 text-brand-600 hover:text-brand-800">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="sm:hidden">首页</span>
-          </Link>
+      <div className="bg-white/80 backdrop-blur-md border-b border-brand-200 sticky top-16 z-40 px-3 sm:px-4 py-3 sm:py-4">
+        <div className="max-w-6xl mx-auto">
+          {/* 第一行：返回按钮 + 搜索框 */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/" className="flex items-center gap-1 text-brand-600 hover:text-brand-800 flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="sm:hidden">首页</span>
+            </Link>
 
-          <div className="relative flex-1">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
               <input
                 type="text"
                 value={searchText}
@@ -342,11 +343,11 @@ export default function SearchPage() {
                     handleSearch(searchText);
                   }
                 }}
-                placeholder="搜索题目或答案内容..."
-                className="w-full px-4 py-2.5 bg-white/80 border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-brand-800 placeholder-brand-500"
+                placeholder="搜索题目或答案..."
+                className="w-full px-4 py-2.5 bg-white/80 border border-brand-200 rounded-xl sm:rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-brand-800 placeholder-brand-500 text-sm"
               />
               {showHistory && searchHistory.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-brand-50 border border-brand-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm border border-brand-200 rounded-xl shadow-lg z-50 overflow-hidden">
                   <div className="p-2 border-b border-brand-200 flex justify-between items-center">
                     <span className="text-sm font-medium text-brand-700">搜索历史</span>
                     <button
@@ -370,77 +371,92 @@ export default function SearchPage() {
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-brand-400">排序:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="px-3 py-1.5 bg-white/80 border border-brand-200 rounded-lg text-sm focus:ring-500 outline-none text-brand-700"
-            >
-              <option value="newest">最新</option>
-              <option value="oldest">最早</option>
-            </select>
-          </div>
-
-          {availableTags.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-4 items-center mt-4">
-              <span className="text-sm text-brand-400">标签:</span>
-              <div className="flex flex-wrap gap-2">
-                {hotTags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    className={`px-3 py-1 text-sm rounded-full transition ${
-                      selectedTags.includes(tag)
-                        ? 'bg-brand-500 text-white'
-                        : 'bg-brand-50 text-brand-600 hover:bg-brand-100'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-              {selectedTags.length > 0 && (
-                <button
-                  onClick={() => setSelectedTags([])}
-                  className="px-3 py-1 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70 rounded-full"
-                >
-                  清除
-                </button>
-              )}
+            {/* 排序选择器 */}
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <span className="text-sm text-brand-400">排序:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="px-3 py-1.5 bg-white/80 border border-brand-200 rounded-lg text-sm focus:ring-500 outline-none text-brand-700"
+              >
+                <option value="newest">最新</option>
+                <option value="oldest">最早</option>
+              </select>
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* 第二行：标签筛选（移动端） */}
+        {availableTags.length > 0 && (
+          <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <span className="text-xs text-brand-400 flex-shrink-0">标签:</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {hotTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`px-2.5 py-1 text-xs rounded-full transition whitespace-nowrap ${
+                    selectedTags.includes(tag)
+                      ? 'bg-brand-500 text-white'
+                      : 'bg-brand-50/80 text-brand-600 hover:bg-brand-100'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            {selectedTags.length > 0 && (
+              <button
+                onClick={() => setSelectedTags([])}
+                className="px-2 py-1 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70 rounded-full flex-shrink-0"
+              >
+                清除
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 移动端排序选择器 */}
+        <div className="sm:hidden mt-2 flex items-center gap-2">
+          <span className="text-xs text-brand-400">排序:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-2 py-1 bg-white/80 border border-brand-200 rounded-lg text-xs focus:ring-500 outline-none text-brand-700"
+          >
+            <option value="newest">最新</option>
+            <option value="oldest">最早</option>
+          </select>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : filteredQuestions.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-medium text-brand-700 mb-2">没有找到相关题目</h3>
-            <p className="text-brand-400">
+            <div className="text-5xl sm:text-6xl mb-4">🔍</div>
+            <h3 className="text-lg sm:text-xl font-medium text-brand-700 mb-2">没有找到相关题目</h3>
+            <p className="text-sm sm:text-base text-brand-400">
               {!currentUserId && '请先登录查看题目'}
               {currentUserId && isAdmin && '请先上传一些题目'}
               {currentUserId && !isAdmin && '试试其他搜索词或标签'}
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredQuestions.map((question) => (
               <Link
                 key={question.id}
                 href={`/questions/${question.id}`}
                 className="block group"
               >
-                <div className="bg-white/80 backdrop-blur-sm border border-brand-200 rounded-xl p-5 hover:border-brand-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                <div className="bg-white/80 backdrop-blur-sm border border-brand-200 rounded-xl p-4 sm:p-5 hover:border-brand-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
                   {/* 悬停时显示的收藏按钮 */}
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                     <button

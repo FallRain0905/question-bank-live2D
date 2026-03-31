@@ -318,3 +318,67 @@ input:focus, textarea:focus, select:focus {
 .theme-bg-gradient {
   background: var(--theme-bg);
 }
+
+/* ==================== 移动端优化 ==================== */
+
+/* 隐藏滚动条但保持滚动功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* iOS安全区域 */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 移动端触摸优化 */
+@media (max-width: 640px) {
+  /* 增大触摸区域 */
+  button, a {
+    min-height: 44px;
+  }
+
+  /* 优化输入框 */
+  input, textarea, select {
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+  }
+
+  /* 禁用长按弹出菜单 */
+  img {
+    -webkit-touch-callout: none;
+  }
+
+  /* 优化卡片阴影 */
+  .card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* 移动端底部导航栏安全区域 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* 禁用文字选择（适用于按钮等交互元素） */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* 优化移动端动画性能 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
