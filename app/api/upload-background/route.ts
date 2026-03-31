@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 创建公开分享链接
-    let publicUrl = `${NEXTCLOUD_PUBLIC_URL}/remote.php/webdav/${fullPath.split('/').map(encodeURIComponent).join('/')}`;
+    let publicUrl = '';
 
     try {
       const shareResponse = await fetch(`${NEXTCLOUD_URL}/ocs/v2.php/apps/files_sharing/api/v1/shares`, {
@@ -92,23 +92,43 @@ export async function POST(req: NextRequest) {
         body: `path=${encodeURIComponent(fullPath)}&shareType=3&publicUpload=false`,
       });
 
+      console.log('分享链接响应状态:', shareResponse.status);
+
       if (shareResponse.ok) {
         const shareData = await shareResponse.text();
+        console.log('分享链接响应内容:', shareData);
         const tokenMatch = shareData.match(/<token>([^<]+)<\/token>/);
         if (tokenMatch) {
           publicUrl = `${NEXTCLOUD_PUBLIC_URL}/s/${tokenMatch[1]}/download`;
+          console.log('分享链接创建成功:', publicUrl);
+        } else {
+          console.error('无法从响应中提取 token，响应:', shareData);
         }
+      } else {
+        const errorText = await shareResponse.text();
+        console.error('分享链接创建失败:', shareResponse.status, errorText);
       }
+
+      // 如果没有成功创建分享链接，返回错误
+      if (!publicUrl) {
+        return NextResponse.json(
+          { success: false, error: '无法创建公开分享链接，请检查 Nextcloud 配置' },
+          { status: 500 }
+        );
+      }
+
     } catch (shareError) {
-      console.warn('创建分享链接失败，使用直接 URL:', shareError);
+      console.error('创建分享链接异常:', shareError);
+      return NextResponse.json(
+        { success: false, error: '创建分享链接失败: ' + (shareError as Error).message },
+        { status: 500 }
+      );
     }
 
     console.log('上传成功! 公开 URL:', publicUrl);
 
-    // 保存背景图片 URL 到 localStorage（与导航栏统一）
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('background-image-url', publicUrl);
-    }
+    // 注意：localStorage 保存逻辑在客户端 Navbar.tsx 中处理
+    // 服务器端无法访问 localStorage
 
     return NextResponse.json({
       success: true,
