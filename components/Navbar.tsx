@@ -95,6 +95,8 @@ export default function Navbar() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('🖼️ 开始上传背景图片:', file.name, file.size);
+
     // 检查文件大小（限制 10MB）
     if (file.size > 10 * 1024 * 1024) {
       alert('图片太大，请选择小于 10MB 的图片');
@@ -107,26 +109,42 @@ export default function Navbar() {
       formData.append('file', file);
       formData.append('path', '背景图片');
 
+      console.log('📤 正在上传文件到服务器...');
+
       const response = await fetch('/api/upload-background', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('📥 收到服务器响应:', response.status);
+
       const result = await response.json();
-      
+
+      console.log('📄 服务器返回结果:', result);
+
       if (!result.success) {
+        console.error('❌ 上传失败:', result.error);
         alert('上传失败: ' + result.error);
         return;
       }
 
       const imageUrl = result.url;
+      console.log('✅ 背景图片上传成功:', imageUrl);
+
       setImageBackground(imageUrl);
       localStorage.setItem('imageBackground', imageUrl);
       document.body.style.setProperty('--bg-image', `url(${imageUrl})`);
       document.body.classList.add('has-bg-image');
+
+      // 清除文件输入，避免重复上传
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
       setDropdownOpen(null);
-      
+
     } catch (error: any) {
+      console.error('❌ 上传过程中发生错误:', error);
       alert('上传失败: ' + error.message);
     }
   };
@@ -137,6 +155,12 @@ export default function Navbar() {
     localStorage.removeItem('imageBackground');
     document.body.style.removeProperty('--bg-image');
     document.body.classList.remove('has-bg-image');
+
+    // 清除文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
     setDropdownOpen(null);
   };
 

@@ -100,13 +100,13 @@ export async function POST(req: NextRequest) {
         const tokenMatch = shareData.match(/<token>([^<]+)<\/token>/);
         if (tokenMatch) {
           publicUrl = `${NEXTCLOUD_PUBLIC_URL}/s/${tokenMatch[1]}/download`;
-          console.log('分享链接创建成功:', publicUrl);
+          console.log('✅ 分享链接创建成功:', publicUrl);
         } else {
-          console.error('无法从响应中提取 token，响应:', shareData);
+          console.error('❌ 无法从响应中提取 token，响应:', shareData);
         }
       } else {
         const errorText = await shareResponse.text();
-        console.error('分享链接创建失败:', shareResponse.status, errorText);
+        console.error('❌ 分享链接创建失败:', shareResponse.status, errorText);
       }
 
       // 如果没有成功创建分享链接，返回错误
