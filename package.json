@@ -35,6 +35,8 @@
     "autoprefixer": "^10.0.1",
     "docx": "^9.6.1",
     "docxtemplater": "^3.68.3",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.2",
     "html-docx-js": "^0.3.1",
     "marked": "^17.0.5",
     "pizzip": "^3.2.0",
