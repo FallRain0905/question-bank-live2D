@@ -254,6 +254,71 @@ export default function LoginPage() {
                 {resetLoading ? '发送中...' : '发送密码重置邮件'}
               </button>
             </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                    用户名 *
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    minLength={2}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    placeholder="请输入用户名（至少2个字符）"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  邮箱 *
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="your@email.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  密码 *
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="至少6位字符"
+                />
+              </div>
+
+              {error && (
+                <div className={`p-3 rounded-lg text-sm ${error.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? '处理中...' : isSignUp ? '注册' : '登录'}
+              </button>
+            </form>
           )}
 
           <div className="mt-6 text-center text-sm text-gray-600">
@@ -289,6 +354,19 @@ export default function LoginPage() {
               </>
             ) : (
               <>
+                还没有账号？
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setError('');
+                    setUsername('');
+                  }}
+                  className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  去注册
+                </button>
+                <>
                 忘记密码？
                 <button
                   type="button"
@@ -312,99 +390,6 @@ export default function LoginPage() {
               </Link>
             </div>
           )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  用户名 *
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  minLength={2}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  placeholder="请输入用户名（至少2个字符）"
-                />
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                邮箱
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                placeholder="your@email.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                密码
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                placeholder="至少6位字符"
-              />
-            </div>
-
-            {error && (
-              <div className={`p-3 rounded-lg text-sm ${error.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? '处理中...' : isSignUp ? '注册' : '登录'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-gray-600">
-            {isSignUp ? '已有账号？' : '还没有账号？'}
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError('');
-                setUsername('');
-              }}
-              className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {isSignUp ? '去登录' : '去注册'}
-            </button>
-          </div>
-
-          {!isSignUp && (
-            <div className="mt-4 text-center">
-              <Link href="/reset-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                忘记密码？
-              </Link>
-            </div>
-          )}
-
-          <div className="mt-4 text-center">
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-              返回首页
-            </Link>
-          </div>
         </div>
       </div>
     </div>
