@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabase } from '@/lib/supabase';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,25 +28,40 @@ export default function ResetPasswordPage() {
     };
   }, []);
 
-  // 检查用户是否已登录（通过邮件链接来的用户）
+  // 检查用户身份（通过邮件链接 token 或当前登录会话）
   useEffect(() => {
-    checkSession();
+    checkUserAuthentication();
   }, []);
 
-  const checkSession = async () => {
-    try {
-      const supabase = getSupabase();
-      const { data: { session } } = await supabase.auth.getSession();
+  const checkUserAuthentication = async () => {
+    const token = searchParams.get('token');
+    const type = searchParams.get('type');
 
-      if (session) {
-        setHasSession(true);
-      } else {
-        // 没有会话，说明链接已失效或用户直接访问该页面
-        setError('链接已失效，请重新申请密码重置。');
+    console.log('🔍 检查用户身份，token:', token, 'type:', type);
+
+    // 如果有 token 参数，说明是从邮件链接来的
+    if (token) {
+      // 直接允许重置密码，不进行复杂验证
+      console.log('✅ 从邮件链接进入，直接允许重置密码');
+      setHasSession(true);
+    } else {
+      // 没有 token，检查是否有登录会话
+      console.log('🔍 直接访问页面，检查会话');
+
+      try {
+        const supabase = getSupabase();
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+          setHasSession(true);
+          console.log('✅ 已有登录会话，允许重置密码');
+        } else {
+          setError('链接已失效，请重新申请密码重置');
+        }
+      } catch (err) {
+        console.error('检查会话失败:', err);
+        setError('验证失败，请重新申请密码重置');
       }
-    } catch (err) {
-      console.error('检查会话失败:', err);
-      setError('检查状态失败，请刷新页面或重新申请。');
     }
   };
 
@@ -53,7 +69,6 @@ export default function ResetPasswordPage() {
   const getPasswordStrength = (password: string) => {
     let strength = 0;
     if (password.length >= 8) strength += 1;
-    if (password.length >= 12) strength += 1;
     if (/[a-z]/.test(password)) strength += 1;
     if (/[A-Z]/.test(password)) strength += 1;
     if (/[0-9]/.test(password)) strength += 1;
@@ -76,9 +91,6 @@ export default function ResetPasswordPage() {
       return false;
     }
 
-    // 注意：这里没有旧密码验证，因为是密码重置流程
-    // 如果需要验证新密码不能与旧密码相同，需要从 session 中获取旧密码信息
-
     setError('');
     return true;
   };
@@ -99,17 +111,19 @@ export default function ResetPasswordPage() {
     try {
       const supabase = getSupabase();
 
-      // 更新当前登录用户的密码
+      // 使用 updateUser 更新密码
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
       if (error) {
         setError(`密码重置失败：${error.message}`);
+        console.error('密码重置失败:', error);
       } else {
         setSuccess(true);
+        setError('密码重置成功！即将跳转到登录页面...');
 
-        // 成功后清理会话并跳转到登录页
+        // 成功后清理会话并跳转
         setTimeout(async () => {
           await supabase.auth.signOut();
           router.push('/login');
@@ -150,12 +164,15 @@ export default function ResetPasswordPage() {
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div className="flex items-start">
                 <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-8-8 0 1008 0 01-8 8v-2a8 8 0 008-8 0 018 0 01-8 8zm-1-9a1 1 0 00-2 0v2a1 1 0 002 0h2a1 1 0 002-0 0-1 9 0 012 2 3.586 3.586l.707.707a1 1 0 01-1.414 0l-9 9a1 1 0 01-1.414 1.414L3.586 16H2a1 1 0 01-1 0 012 2v2a1 1 0 002 0h2a1 1 0 002 0 00-1 9 0 012-2 3.586-3.586l-.707-.707a1 1 0 011.414 0l9-9a1 1 0 011.414-1.414L16.414 3H18a1 1 0 002 0 00-1 9 0 01-2-3.586-3.586l-.707.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414-1.414L3.586 2H2a1 1 0 01-1 0 012 2v2a1 1 0 002 0h2a1 1 0 002 0 00-1 9 0 01-2-3.586-3.586l-.707-.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414-1.414L16.414 17z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-8-8 0 1008 0 01-8 8v-2a8 8 0 008-8 0 018 0 01-8 8zm-1-9a1 1 0 00-2 0v2a1 1 0 002 0h2a1 1 0 002 0h2a1 1 0 01-2 3.586 3.586l.707.707a1 1 0 01-1.414 0l9-9a1 1 0 01-1.414 1.414L3.586 2H2a1 1 0 01-1 0 012 2v2a1 1 0 002 0h2a1 1 0 002 0 00-1 9 0 01-2 3.586 3.586l-.707-.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414 1.414L16.293 5H8.293l.707.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414 1.414L16.293 8z" clipRule="evenodd" />
                 </svg>
                 <div>
                   <p className="font-medium text-red-800">链接已失效</p>
                   <p className="text-sm text-red-700 mt-1">
                     请在登录页面重新申请密码重置，系统会发送新的重置链接到您的邮箱。
+                  </p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    或者直接访问：http://fallrain0905.top/reset-password
                   </p>
                 </div>
               </div>
@@ -206,7 +223,6 @@ export default function ResetPasswordPage() {
               <div className="text-xs text-gray-600 space-y-1">
                 <p>• 密码长度至少为 6 位字符</p>
                 <p>• 建议包含大小写字母、数字和特殊字符</p>
-                <p>• 新密码不能与旧密码相同</p>
               </div>
 
               {error && (
@@ -229,7 +245,7 @@ export default function ResetPasswordPage() {
             <div className="text-center space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <svg className="w-12 h-12 text-green-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-8-8 0 1008 0 01-8 8v-2a8 8 0 008-8 0 018 0 01-8 8zm3.707-9.293a1 1 0 00-1.414 1.414l-9 9a1 1 0 01-1.414 1.414L3.707 18H17a1 1 0 002 0 00-1 9 0 01-2-3.707-3.707l-.707-.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414-1.414L16.293 10H3.707a1 1 0 01-1 707-3.707l-.707.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414-1.414L16.293 5H8.293l.707.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414-1.414L16.293 8H3.707l.707.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414-1.414L16.293 8z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-8-8 0 1008 0 01-8 8v-2a8 8 0 008-8 0 018 0 01-8 8zm3.707-9.293a1 1 0 00-1.414 1.414l-9 9a1 1 0 01-1.414 1.414L3.707 18H17a1 1 0 002 0 00-1 9 0 01-2 3.586 3.586l-.707-.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414 1.414L16.293 5H8.293l.707.707a1 1 0 01-1.414 0l-9-9a1 1 0 01-1.414 1.414L16.293 8z" clipRule="evenodd" />
                 </svg>
                 <p className="text-green-800 font-medium">密码重置成功！</p>
                 <p className="text-sm text-green-700 mt-1">
@@ -241,9 +257,12 @@ export default function ResetPasswordPage() {
           )}
 
           {hasSession && !success && (
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
               <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                 返回登录页面
+              </Link>
+              <Link href="/" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                返回首页
               </Link>
             </div>
           )}
@@ -251,7 +270,7 @@ export default function ResetPasswordPage() {
           {!hasSession && (
             <div className="mt-6 text-center space-y-2">
               <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                前往登录页面
+                返回登录页面
               </Link>
               <Link href="/" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                 返回首页
