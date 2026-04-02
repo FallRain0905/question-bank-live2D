@@ -76,10 +76,8 @@ export default function ResetPasswordPage() {
       return false;
     }
 
-    if (newPassword === password) {
-      setError('新密码不能与旧密码相同');
-      return false;
-    }
+    // 注意：这里没有旧密码验证，因为是密码重置流程
+    // 如果需要验证新密码不能与旧密码相同，需要从 session 中获取旧密码信息
 
     setError('');
     return true;

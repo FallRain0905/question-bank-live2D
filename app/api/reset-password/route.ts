@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 发送密码重置邮件
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
 
     if (error) {
       console.error('发送密码重置邮件失败:', error);

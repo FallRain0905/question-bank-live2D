@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
   const [error, setError] = useState('');
   const [isClient, setIsClient] = useState(false);
 
@@ -156,10 +155,8 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (result.success) {
-        setResetSuccess(true);
         setError('密码重置邮件已发送！请检查您的邮箱。');
         setTimeout(() => {
-          setResetSuccess(false);
           setResetEmail('');
           setShowForgotPassword(false);
           setError('');
