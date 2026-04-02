@@ -19,10 +19,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isClient, setIsClient] = useState(false);
 
-  // 使用 ref 防止组件卸载后更新状态
   const isMounted = useRef(true);
 
-  // 确保只在客户端渲染，避免 hydration 不匹配
   useEffect(() => {
     setIsClient(true);
     isMounted.current = true;
@@ -32,7 +30,6 @@ export default function LoginPage() {
     };
   }, []);
 
-  // 创建用户资料（通过 API）
   const createUserProfile = async (userId: string, accessToken?: string) => {
     try {
       const response = await fetch('/api/users/create-profile', {
@@ -47,11 +44,9 @@ export default function LoginPage() {
       });
 
       const result = await response.json();
-
       if (!response.ok) {
         console.error('创建用户资料 API 失败:', result.error);
       }
-
       return result;
     } catch (err) {
       console.error('创建用户资料请求失败:', err);
@@ -61,8 +56,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (loading) return; // 防止重复提交
+    if (loading) return;
 
     setLoading(true);
     setError('');
@@ -71,7 +65,6 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // 注册
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -86,24 +79,19 @@ export default function LoginPage() {
         if (error) {
           setError(error.message);
         } else if (data.user) {
-          // 尝试创建用户公开信息记录
           if (data.session?.access_token) {
-            // 如果有会话（不需要邮箱验证），尝试创建资料
             await createUserProfile(data.user.id, data.session.access_token);
           } else {
-            // 需要邮箱验证，使用服务端 API 尝试创建
             await createUserProfile(data.user.id);
           }
 
           if (data.session) {
-            // 注册后自动登录
             setError('注册成功！正在跳转...');
             setTimeout(() => {
               router.push('/');
               router.refresh();
             }, 500);
           } else {
-            // 需要邮箱验证
             setError('注册成功！请检查邮箱并点击确认链接，然后登录。');
             setIsSignUp(false);
             setUsername('');
@@ -112,7 +100,6 @@ export default function LoginPage() {
           setError('注册失败，请重试');
         }
       } else {
-        // 登录
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -121,7 +108,6 @@ export default function LoginPage() {
         if (error) {
           setError(error.message);
         } else if (data.session) {
-          // 登录成功 - 检查是否有用户资料
           try {
             const { data: profile } = await supabase
               .from('user_profiles')
@@ -129,7 +115,6 @@ export default function LoginPage() {
               .eq('id', data.user.id)
               .maybeSingle();
 
-            // 如果没有用户资料，创建一个
             if (!profile && data.user?.user_metadata?.username) {
               await createUserProfile(data.user.id, data.session.access_token);
             }
@@ -137,10 +122,9 @@ export default function LoginPage() {
             console.log('检查/创建用户资料失败:', err);
           }
 
-          // 使用 router.push 而不是刷新
           router.push('/');
           router.refresh();
-          return; // 直接返回，不执行 setLoading(false)
+          return;
         } else {
           setError('登录失败，请重试');
         }
@@ -155,10 +139,8 @@ export default function LoginPage() {
     }
   };
 
-  // 发送密码重置邮件
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (resetLoading) return;
 
     setResetLoading(true);
@@ -195,7 +177,6 @@ export default function LoginPage() {
     }
   };
 
-  // 服务端渲染时显示占位，避免 hydration 不匹配
   if (!isClient) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
@@ -216,7 +197,6 @@ export default function LoginPage() {
             {showForgotPassword ? '忘记密码' : isSignUp ? '注册账号' : '登录'}
           </h1>
 
-          {/* 忘记密码表单 */}
           {showForgotPassword ? (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div>
@@ -323,20 +303,17 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center text-sm text-gray-600">
             {showForgotPassword ? (
-              <>
-                还记得密码？
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(false);
-                    setError('');
-                    setResetEmail('');
-                  }}
-                  className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  返回登录
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setError('');
+                  setResetEmail('');
+                }}
+                className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
+              >
+                返回登录
+              </button>
             ) : isSignUp ? (
               <>
                 已有账号？
@@ -366,8 +343,6 @@ export default function LoginPage() {
                 >
                   去注册
                 </button>
-                <>
-                忘记密码？
                 <button
                   type="button"
                   onClick={() => {
@@ -377,7 +352,7 @@ export default function LoginPage() {
                   }}
                   className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  重置密码
+                  忘记密码？
                 </button>
               </>
             )}
