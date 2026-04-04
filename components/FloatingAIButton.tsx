@@ -11,6 +11,13 @@ interface Message {
   image?: string;
 }
 
+interface AssistantConfig {
+  name: string;
+  model: string;
+  age: string;
+  personality: string;
+}
+
 export default function FloatingAIButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -20,6 +27,7 @@ export default function FloatingAIButton() {
   const [loading, setLoading] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [live2dSettings, setLive2DSettings] = useState<Live2DSettings | null>(null);
+  const [assistantConfig, setAssistantConfig] = useState<AssistantConfig | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +46,11 @@ export default function FloatingAIButton() {
     };
 
     checkAssistantConfig();
+
+    // 清理函数
+    return () => {
+      setMounted(false);
+    };
   }, []);
 
   const scrollToBottom = () => {
@@ -85,6 +98,9 @@ export default function FloatingAIButton() {
   };
 
   const handleScreenshot = async () => {
+    let video: HTMLVideoElement | null = null;
+    let stream: MediaStream | null = null;
+
     try {
       // 检查浏览器是否支持
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
@@ -93,19 +109,19 @@ export default function FloatingAIButton() {
       }
 
       // 请求屏幕共享权限
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
       });
 
       // 创建 video 元素来捕获画面
-      const video = document.createElement('video');
+      video = document.createElement('video');
       video.srcObject = stream;
       video.autoplay = true;
 
       // 等待视频加载
       await new Promise<void>((resolve) => {
-        video.onloadedmetadata = () => {
-          video.play();
+        video!.onloadedmetadata = () => {
+          video!.play();
           resolve();
         };
       });
@@ -115,12 +131,12 @@ export default function FloatingAIButton() {
 
       // 绘制到 canvas
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video!.videoWidth;
+      canvas.height = video!.videoHeight;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0);
+        ctx.drawImage(video!, 0, 0);
       }
 
       // 停止所有轨道
@@ -142,6 +158,15 @@ export default function FloatingAIButton() {
         alert('未找到可用的屏幕设备');
       } else {
         alert('截图失败: ' + (error.message || '请重试或使用上传图片功能'));
+      }
+    } finally {
+      // 清理资源
+      if (video) {
+        video.srcObject = null;
+        video.remove();
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
     }
   };
