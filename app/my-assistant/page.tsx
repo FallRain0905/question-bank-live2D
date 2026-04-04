@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { saveLive2DSettings } from '@/lib/live2d-settings';
 
 export default function MyAssistantPage() {
   const [configured, setConfigured] = useState(false);
@@ -45,6 +46,9 @@ export default function MyAssistantPage() {
     localStorage.setItem('ai_assistant_config', JSON.stringify(config));
     setShowConfigForm(false);
     setConfigured(true);
+
+    // 配置AI助手后，自动显示Live2D角色
+    saveLive2DSettings({ visible: true });
   };
 
   const handleSkipConfig = () => {
@@ -62,6 +66,9 @@ export default function MyAssistantPage() {
     localStorage.setItem('ai_assistant_config', JSON.stringify(defaultConfig));
     setConfigured(true);
     setShowConfigForm(false);
+
+    // 配置AI助手后，自动显示Live2D角色
+    saveLive2DSettings({ visible: true });
   };
 
   return (
