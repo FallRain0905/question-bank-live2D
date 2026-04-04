@@ -97,33 +97,31 @@ export default function Live2DCharacter() {
         // 创建PIXI应用 - 显式指定渲染器类型
         let app;
         try {
+          // 先尝试WebGL渲染器
           app = new PIXI.Application({
             width: settings.canvasWidth,
             height: settings.canvasHeight,
-            transparent: true,
-            backgroundAlpha: 0,
-            background: null,
+            background: '#00000000', // 完全透明的背景（PIXI v7格式）
             antialias: true,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
-            failIfMajorPerformanceCaveat: false,
             // 显式指定渲染器类型
-            forceCanvas: false, // 先尝试WebGL
+            preferWebGL: true,
+            forceCanvas: false,
           });
           console.log('WebGL渲染器初始化成功');
         } catch (error) {
           console.warn('WebGL渲染器初始化失败，尝试Canvas渲染器:', error);
           try {
+            // 回退到Canvas渲染器
             app = new PIXI.Application({
               width: settings.canvasWidth,
               height: settings.canvasHeight,
-              transparent: true,
-              backgroundAlpha: 0,
-              background: null,
+              background: '#00000000', // 完全透明的背景
               antialias: true,
               resolution: window.devicePixelRatio || 1,
               autoDensity: true,
-              failIfMajorPerformanceCaveat: false,
+              preferWebGL: false,
               forceCanvas: true, // 强制使用Canvas
             });
             console.log('Canvas渲染器初始化成功');
