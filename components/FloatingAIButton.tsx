@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { getLive2DSettings, saveLive2DSettings, type Live2DSettings } from '@/lib/live2d-settings';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,12 +13,21 @@ interface Message {
 
 export default function FloatingAIButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [live2dSettings, setLive2DSettings] = useState<Live2DSettings | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 确保客户端挂载后读取设置
+  useEffect(() => {
+    setMounted(true);
+    setLive2DSettings(getLive2DSettings());
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -136,6 +146,12 @@ export default function FloatingAIButton() {
     reader.readAsDataURL(file);
   };
 
+  const handleLive2DSettingChange = (key: keyof Live2DSettings, value: number | boolean) => {
+    const newSettings = { ...live2dSettings, [key]: value };
+    setLive2DSettings(newSettings);
+    saveLive2DSettings(newSettings);
+  };
+
   const handleSend = async () => {
     if (!input.trim() && !screenshot) return;
 
@@ -184,6 +200,18 @@ export default function FloatingAIButton() {
 
   return (
     <>
+      {/* 设置按钮 */}
+      <button
+        onClick={() => setShowSettings(!showSettings)}
+        className="fixed bottom-6 right-28 z-50 w-12 h-12 bg-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group border-2 border-brand-200"
+        title="Live2D 设置"
+      >
+        <svg className="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+
       {/* 浮动按钮 - 固定位置 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -332,6 +360,161 @@ export default function FloatingAIButton() {
                 发送
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live2D 设置面板 */}
+      {showSettings && mounted && live2dSettings && (
+        <div className="fixed z-50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-300 bottom-20 right-6 w-80">
+          {/* 标题栏 */}
+          <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 flex items-center justify-between">
+            <h3 className="text-white font-medium flex items-center gap-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Live2D 设置
+            </h3>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="text-white/80 hover:text-white transition-colors"
+              title="关闭"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 设置内容 */}
+          <div className="p-6 space-y-6">
+            {/* 显示/隐藏开关 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-brand-800 mb-1">显示看板娘</h4>
+                <p className="text-xs text-brand-500">在页面上显示Live2D角色</p>
+              </div>
+              <button
+                onClick={() => handleLive2DSettingChange('visible', !live2dSettings.visible)}
+                className={`relative w-14 h-8 rounded-full transition-colors ${
+                  live2dSettings.visible ? 'bg-brand-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                    live2dSettings.visible ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* 点击穿透开关 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-brand-800 mb-1">点击穿透</h4>
+                <p className="text-xs text-brand-500">画布空白区域可点击到底层页面</p>
+              </div>
+              <button
+                onClick={() => handleLive2DSettingChange('enableClickThrough', !live2dSettings.enableClickThrough)}
+                className={`relative w-14 h-8 rounded-full transition-colors ${
+                  live2dSettings.enableClickThrough ? 'bg-brand-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                    live2dSettings.enableClickThrough ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* 画布宽度 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-brand-800">画布宽度</h4>
+                <span className="text-sm text-brand-600 bg-brand-50 px-3 py-1 rounded-full">
+                  {live2dSettings.canvasWidth}px
+                </span>
+              </div>
+              <input
+                type="range"
+                min="200"
+                max="600"
+                step="50"
+                value={live2dSettings.canvasWidth}
+                onChange={(e) => handleLive2DSettingChange('canvasWidth', parseInt(e.target.value))}
+                className="w-full h-2 bg-brand-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
+              />
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-brand-400">200px</span>
+                <span className="text-xs text-brand-400">600px</span>
+              </div>
+            </div>
+
+            {/* 画布高度 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-brand-800">画布高度</h4>
+                <span className="text-sm text-brand-600 bg-brand-50 px-3 py-1 rounded-full">
+                  {live2dSettings.canvasHeight}px
+                </span>
+              </div>
+              <input
+                type="range"
+                min="300"
+                max="800"
+                step="50"
+                value={live2dSettings.canvasHeight}
+                onChange={(e) => handleLive2DSettingChange('canvasHeight', parseInt(e.target.value))}
+                className="w-full h-2 bg-brand-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
+              />
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-brand-400">300px</span>
+                <span className="text-xs text-brand-400">800px</span>
+              </div>
+            </div>
+
+            {/* 模型缩放 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-brand-800">模型缩放</h4>
+                <span className="text-sm text-brand-600 bg-brand-50 px-3 py-1 rounded-full">
+                  {live2dSettings.modelScale.toFixed(2)}x
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.05"
+                max="0.5"
+                step="0.01"
+                value={live2dSettings.modelScale}
+                onChange={(e) => handleLive2DSettingChange('modelScale', parseFloat(e.target.value))}
+                className="w-full h-2 bg-brand-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
+              />
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-brand-400">0.05x</span>
+                <span className="text-xs text-brand-400">0.5x</span>
+              </div>
+            </div>
+
+            {/* 重置按钮 */}
+            <button
+              onClick={() => {
+                const defaultSettings = {
+                  canvasWidth: 400,
+                  canvasHeight: 500,
+                  modelScale: 0.2,
+                  visible: true,
+                  enableClickThrough: true,
+                };
+                setLive2DSettings(defaultSettings);
+                saveLive2DSettings(defaultSettings);
+              }}
+              className="w-full px-4 py-2 bg-brand-100 text-brand-700 rounded-lg hover:bg-brand-200 transition-colors text-sm font-medium"
+            >
+              重置为默认设置
+            </button>
           </div>
         </div>
       )}

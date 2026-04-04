@@ -35,3 +35,29 @@ Thumbs.db
 # 测试覆盖率
 coverage
 .nyc_output
+
+# 临时文件
+*.log
+*.bat
+*.html
+*.min.js
+*.min.css
+server.log
+.claude/
+LIVE2D_TECHNICAL_ISSUES_REPORT.md
+
+# 临时测试文件和文件夹
+neko/
+live2d-witch-complete.html
+model-switcher.html
+witch-display.html
+APlayer.min.js
+driver.min.js
+i18next.min.js
+i18nextHttpBackend.min.js
+live2d.min.js
+live2dcubismcore.min.js
+ogg-opus-decoder.min.js
+ogg-opus-decoder.opus-ml.min.js
+pixi.min.js
+three-vrm.module.min.js

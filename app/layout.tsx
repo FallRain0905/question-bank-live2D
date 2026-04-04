@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MobileTabBar from "@/components/MobileTabBar";
 import FloatingAIButton from "@/components/FloatingAIButton";
+import Live2DCharacter from "@/components/Live2DCharacter";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function RootLayout({
           <Footer />
           <MobileTabBar />
           <FloatingAIButton />
+          <Live2DCharacter />
         </ThemeProvider>
       </body>
     </html>
