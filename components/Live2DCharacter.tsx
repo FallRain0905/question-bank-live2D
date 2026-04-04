@@ -94,41 +94,21 @@ export default function Live2DCharacter() {
         const PIXI = (window as any).PIXI;
         console.log('PIXI版本:', PIXI.VERSION);
 
-        // 创建PIXI应用 - 显式指定渲染器类型
+        // 创建PIXI应用 - 简化配置以避免渲染器检测问题
         let app;
         try {
-          // 先尝试WebGL渲染器
+          // 最简配置，让PIXI自动处理渲染器
           app = new PIXI.Application({
             width: settings.canvasWidth,
             height: settings.canvasHeight,
-            background: '#00000000', // 完全透明的背景（PIXI v7格式）
-            antialias: true,
-            resolution: window.devicePixelRatio || 1,
-            autoDensity: true,
-            // 显式指定渲染器类型
-            preferWebGL: true,
-            forceCanvas: false,
+            backgroundColor: '#00000000', // 透明背景
           });
-          console.log('WebGL渲染器初始化成功');
+          console.log('PIXI渲染器类型:', app.renderer.type);
+          console.log('WebGL可用:', (app.renderer as any).webgl);
+          console.log('PIXI应用创建成功');
         } catch (error) {
-          console.warn('WebGL渲染器初始化失败，尝试Canvas渲染器:', error);
-          try {
-            // 回退到Canvas渲染器
-            app = new PIXI.Application({
-              width: settings.canvasWidth,
-              height: settings.canvasHeight,
-              background: '#00000000', // 完全透明的背景
-              antialias: true,
-              resolution: window.devicePixelRatio || 1,
-              autoDensity: true,
-              preferWebGL: false,
-              forceCanvas: true, // 强制使用Canvas
-            });
-            console.log('Canvas渲染器初始化成功');
-          } catch (canvasError) {
-            console.error('Canvas渲染器也初始化失败:', canvasError);
-            throw new Error('无法初始化PIXI渲染器，请检查浏览器兼容性');
-          }
+          console.error('PIXI应用创建失败:', error);
+          throw new Error('无法初始化PIXI渲染器，请检查浏览器兼容性');
         }
 
         appRef.current = app;
