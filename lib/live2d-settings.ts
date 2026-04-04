@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS: Live2DSettings = {
   canvasWidth: 600,
   canvasHeight: 550,  // 更高的画布，让模型能看到头部
   modelScale: 0.2,
-  visible: true,
+  visible: false, // 默认隐藏Live2D模型
   enableClickThrough: true, // 默认启用点击穿透
 };
 
