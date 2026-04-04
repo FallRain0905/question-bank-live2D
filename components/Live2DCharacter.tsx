@@ -94,22 +94,55 @@ export default function Live2DCharacter() {
         const PIXI = (window as any).PIXI;
         console.log('PIXI版本:', PIXI.VERSION);
 
-        // 创建PIXI应用 - 最简配置，避免渲染器检测问题
+        // 创建PIXI应用 - 使用最基础的配置，避免渲染器检测问题
         let app;
+        let view: HTMLCanvasElement;
+
         try {
-          // 最简配置，让PIXI自动处理渲染器
-          app = new PIXI.Application({
-            width: settings.canvasWidth,
-            height: settings.canvasHeight,
-            transparent: true, // 设置透明
-          });
-          console.log('PIXI渲染器类型:', app.renderer.type);
-          console.log('WebGL可用:', (app.renderer as any).webgl);
-          console.log('PIXI应用创建成功');
+          // 检查WebGL支持
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+          if (gl) {
+            // WebGL可用，创建PIXI应用
+            app = new PIXI.Application({
+              width: settings.canvasWidth,
+              height: settings.canvasHeight,
+              view: canvas,
+              transparent: true,
+              backgroundAlpha: 0,
+              antialias: true,
+            });
+            console.log('WebGL可用，使用WebGL渲染器');
+          } else {
+            console.log('WebGL不可用，跳过Live2D加载');
+            throw new Error('WebGL不可用，Live2D需要WebGL支持');
+          }
+
+          appRef.current = app;
+          view = app.view as HTMLCanvasElement;
+
+          console.log('PIXI版本:', PIXI.VERSION);
+          console.log('渲染器类型:', app.renderer.type);
+          console.log('画布尺寸:', settings.canvasWidth, 'x', settings.canvasHeight);
+
         } catch (error) {
           console.error('PIXI应用创建失败:', error);
+          // 不要抛出错误，让用户可以正常使用应用
           console.warn('Live2D加载失败，但不影响其他功能');
+          // 检查是否是因为WebGL不可用
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          if (!gl) {
+            console.warn('您的浏览器不支持WebGL，Live2D需要WebGL才能运行');
+            console.warn('建议使用现代浏览器：Chrome、Firefox、Safari等');
+          }
           return () => {}; // 返回空清理函数
+        }
+
+        // 如果app创建失败，直接返回
+        if (!app) {
+          return () => {};
         }
 
         appRef.current = app;
@@ -118,6 +151,10 @@ export default function Live2DCharacter() {
         // 获取容器并添加canvas
         if (containerRef.current) {
           containerRef.current.appendChild(app.view);
+
+          // 设置Canvas样式确保完全透明
+          app.view.style.backgroundColor = 'transparent !important';
+          app.view.style.background = 'none !important';
 
           // 如果启用点击穿透，设置canvas不响应事件
           if (settings.enableClickThrough) {
@@ -134,14 +171,22 @@ export default function Live2DCharacter() {
 
         modelRef.current = model;
 
-        // 设置模型属性 - 调整位置让头部可见
+        // 设置模型属性 - 调整位置让模型完整显示
         app.stage.addChild(model);
         const centerX = settings.canvasWidth / 2;
-        const centerY = settings.canvasHeight * 0.65; // 稍微靠下，让头部可见
+        const centerY = settings.canvasHeight * 0.5; // 垂直居中
         model.x = centerX;
         model.y = centerY;
         model.anchor.set(0.5, 0.5);
-        model.scale.set(settings.modelScale);
+
+        // 根据模型实际尺寸计算合适的缩放比例
+        const modelBounds = model.getBounds();
+        const scaleX = (settings.canvasWidth * 0.8) / modelBounds.width;
+        const scaleY = (settings.canvasHeight * 0.8) / modelBounds.height;
+        const autoScale = Math.min(scaleX, scaleY);
+
+        // 使用自动计算的缩放比例，但不超过设置的最大缩放
+        model.scale.set(Math.min(autoScale, settings.modelScale));
 
         // 根据设置决定是否启用点击穿透
         const enableClickThrough = settings.enableClickThrough;
@@ -340,6 +385,8 @@ export default function Live2DCharacter() {
         width: `${settings.canvasWidth}px`,
         height: `${settings.canvasHeight}px`,
         pointerEvents: 'none', // 画布穿透点击
+        background: 'none !important',
+        backgroundColor: 'transparent !important',
       }}
     />
   );

@@ -382,3 +382,24 @@ input:focus, textarea:focus, select:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==================== Live2D Canvas 透明样式 ==================== */
+
+/* 确保Live2D相关的canvas完全透明 */
+canvas {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+/* Live2D容器完全透明 */
+[class*="live2d"] canvas {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* 确保没有额外的背景色 */
+.fixed.bottom-20.left-4 canvas,
+.fixed.bottom-20.left-8 canvas {
+  background-color: transparent !important;
+  background: none !important;
+}

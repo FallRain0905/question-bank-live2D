@@ -11,7 +11,7 @@ export interface Live2DSettings {
 const DEFAULT_SETTINGS: Live2DSettings = {
   canvasWidth: 600,
   canvasHeight: 550,  // 更高的画布，让模型能看到头部
-  modelScale: 0.2,
+  modelScale: 0.5,  // 提高最大缩放限制，自动缩放会根据模型实际尺寸调整
   visible: true, // 默认显示Live2D模型
   enableClickThrough: true, // 默认启用点击穿透
 };
