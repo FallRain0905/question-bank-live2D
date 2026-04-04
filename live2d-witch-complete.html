@@ -21,7 +21,6 @@
 </head>
 <body>
     <div id="container">
-        <canvas id="canvas"></canvas>
     </div>
     <div id="ui">
         <h2>🧙 Witch Live2D - Complete</h2>
@@ -90,17 +89,27 @@
                 }
 
                 updateStatus('正在初始化Cubism框架...');
-                app = new PIXI.Application({
-                    view: document.getElementById('canvas'),
-                    width: window.innerWidth,
-                    height: window.innerHeight,
-                    transparent: true,
-                    backgroundAlpha: 0,
-                    autoStart: true,
-                    resolution: window.devicePixelRatio || 1
-                });
 
-                log('PIXI应用创建成功');
+                // 让PIXI自动创建Canvas，避免渲染器检测问题
+                try {
+                    app = new PIXI.Application({
+                        width: window.innerWidth,
+                        height: window.innerHeight,
+                        transparent: true,
+                        backgroundAlpha: 0,
+                        autoStart: true,
+                        resolution: window.devicePixelRatio || 1
+                    });
+
+                    // 将PIXI的Canvas添加到container中
+                    const container = document.getElementById('container');
+                    container.appendChild(app.renderer.view);
+
+                    log('✅ PIXI应用创建成功');
+                } catch (err) {
+                    console.error('PIXI应用创建失败:', err);
+                    throw new Error(`PIXI应用创建失败: ${err.message}`);
+                }
                 updateStatus('正在加载魔女模型...');
 
                 document.getElementById('resetBtn').disabled = true;
@@ -162,6 +171,39 @@
 
                 model.on('pointerup', () => isDragging = false);
                 model.on('pointerupoutside', () => isDragging = false);
+
+                // 鼠标跟随功能
+                let mouseFollowEnabled = true;
+
+                // 简单的鼠标跟随实现
+                window.addEventListener('mousemove', (e) => {
+                    if (!mouseFollowEnabled || !model || !app) return;
+
+                    const rect = app.renderer.view.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    // 使用模型的focus方法（如果可用）
+                    if (typeof model.focus === 'function') {
+                        model.focus(x, y);
+                    }
+                });
+
+                log('✅ 鼠标跟随功能已启用');
+
+                // 添加鼠标跟随控制按钮
+                const followBtn = document.createElement('button');
+                followBtn.className = 'btn';
+                followBtn.style.marginTop = '10px';
+                followBtn.style.background = '#27ae60';
+                followBtn.textContent = '👁️ 鼠标跟随: 开启';
+                followBtn.onclick = () => {
+                    mouseFollowEnabled = !mouseFollowEnabled;
+                    followBtn.textContent = mouseFollowEnabled ? '👁️ 鼠标跟随: 开启' : '👁️ 鼠标跟随: 关闭';
+                    followBtn.style.background = mouseFollowEnabled ? '#27ae60' : '#e74c3c';
+                    log(`鼠标跟随已${mouseFollowEnabled ? '启用' : '禁用'}`);
+                };
+                document.getElementById('ui').appendChild(followBtn);
 
                 // 表情控制函数
                 const setExpression = async (exprName) => {
