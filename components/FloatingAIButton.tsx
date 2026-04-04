@@ -27,6 +27,17 @@ export default function FloatingAIButton() {
   useEffect(() => {
     setMounted(true);
     setLive2DSettings(getLive2DSettings());
+
+    // 检查猫咪助手配置
+    const checkAssistantConfig = () => {
+      const assistantConfig = localStorage.getItem('ai_assistant_config');
+      if (assistantConfig) {
+        const config = JSON.parse(assistantConfig);
+        setAssistantConfig(config);
+      }
+    };
+
+    checkAssistantConfig();
   }, []);
 
   const scrollToBottom = () => {
@@ -153,6 +164,12 @@ export default function FloatingAIButton() {
   };
 
   const handleSend = async () => {
+    // 检查猫咪助手配置
+    if (!assistantConfig) {
+      console.log('⚠️ 请先前往AI助手页面配置你的专属猫咪助手！');
+      return;
+    }
+
     if (!input.trim() && !screenshot) return;
 
     const userMessage: Message = {

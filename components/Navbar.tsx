@@ -196,7 +196,10 @@ export default function Navbar() {
             <Link href="/classes" className="px-4 py-2 text-brand-600 hover:bg-brand-100 rounded-lg transition-all">
               班级
             </Link>
-            
+	            <Link href="/my-assistant" className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all shadow-md">
+	              🐱 你的专属AI助手
+	            </Link>
+
             {/* 工具菜单 */}
             <div className="relative">
               <button
