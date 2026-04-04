@@ -72,33 +72,69 @@ export default function Live2DCharacter() {
         // 清理旧的实例
         cleanupLive2D();
 
-        // 按顺序加载必需的脚本
-        await loadScript('/libs/live2dcubismcore.min.js');
-        await loadScript('/libs/live2d.min.js');
+        // 按正确顺序加载必需的脚本
+        // 1. 先加载PIXI
         await loadScript('/libs/pixi.min.js');
+        // 2. 加载Live2D核心库
+        await loadScript('/libs/live2dcubismcore.min.js');
+        // 3. 加载Live2D绑定
+        await loadScript('/libs/live2d.min.js');
+        // 4. 加载Live2D适配器
         await loadScript('/libs/index.min.js');
 
-        // 等待PIXI和Live2D初始化
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // 等待库初始化
+        await new Promise(resolve => setTimeout(resolve, 800));
 
-        // 检查PIXI和Live2D是否可用
+        // 检查PIXI是否可用
         if (typeof (window as any).PIXI === 'undefined') {
-          console.error('PIXI未加载');
-          return;
+          console.error('PIXI未加载，检查脚本路径');
+          throw new Error('PIXI库加载失败');
         }
 
         const PIXI = (window as any).PIXI;
+        console.log('PIXI版本:', PIXI.VERSION);
 
-        // 创建PIXI应用 - 使用设置的画布宽度和高度
-        const app = new PIXI.Application({
-          width: settings.canvasWidth,
-          height: settings.canvasHeight,
-          transparent: true,
-          backgroundAlpha: 0,
-          background: null,
-        });
+        // 创建PIXI应用 - 显式指定渲染器类型
+        let app;
+        try {
+          app = new PIXI.Application({
+            width: settings.canvasWidth,
+            height: settings.canvasHeight,
+            transparent: true,
+            backgroundAlpha: 0,
+            background: null,
+            antialias: true,
+            resolution: window.devicePixelRatio || 1,
+            autoDensity: true,
+            failIfMajorPerformanceCaveat: false,
+            // 显式指定渲染器类型
+            forceCanvas: false, // 先尝试WebGL
+          });
+          console.log('WebGL渲染器初始化成功');
+        } catch (error) {
+          console.warn('WebGL渲染器初始化失败，尝试Canvas渲染器:', error);
+          try {
+            app = new PIXI.Application({
+              width: settings.canvasWidth,
+              height: settings.canvasHeight,
+              transparent: true,
+              backgroundAlpha: 0,
+              background: null,
+              antialias: true,
+              resolution: window.devicePixelRatio || 1,
+              autoDensity: true,
+              failIfMajorPerformanceCaveat: false,
+              forceCanvas: true, // 强制使用Canvas
+            });
+            console.log('Canvas渲染器初始化成功');
+          } catch (canvasError) {
+            console.error('Canvas渲染器也初始化失败:', canvasError);
+            throw new Error('无法初始化PIXI渲染器，请检查浏览器兼容性');
+          }
+        }
 
         appRef.current = app;
+        console.log('PIXI应用创建成功，画布尺寸:', settings.canvasWidth, 'x', settings.canvasHeight);
 
         // 获取容器并添加canvas
         if (containerRef.current) {
