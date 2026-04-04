@@ -94,21 +94,53 @@ export default function Live2DCharacter() {
         const PIXI = (window as any).PIXI;
         console.log('PIXI版本:', PIXI.VERSION);
 
-        // 创建PIXI应用 - 简化配置以避免渲染器检测问题
+        // 创建PIXI应用 - 使用最基础的配置，避免渲染器检测问题
         let app;
+        let view: HTMLCanvasElement;
+
         try {
-          // 最简配置，让PIXI自动处理渲染器
-          app = new PIXI.Application({
-            width: settings.canvasWidth,
-            height: settings.canvasHeight,
-            backgroundColor: '#00000000', // 透明背景
-          });
-          console.log('PIXI渲染器类型:', app.renderer.type);
-          console.log('WebGL可用:', (app.renderer as any).webgl);
-          console.log('PIXI应用创建成功');
+          // 检查WebGL支持
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+          if (gl) {
+            // WebGL可用，创建PIXI应用
+            app = new PIXI.Application({
+              width: settings.canvasWidth,
+              height: settings.canvasHeight,
+              view: canvas,
+              backgroundColor: '#00000000',
+            });
+            console.log('WebGL可用，使用WebGL渲染器');
+          } else {
+            console.log('WebGL不可用，跳过Live2D加载');
+            throw new Error('WebGL不可用，Live2D需要WebGL支持');
+          }
+
+          appRef.current = app;
+          view = app.view as HTMLCanvasElement;
+
+          console.log('PIXI版本:', PIXI.VERSION);
+          console.log('渲染器类型:', app.renderer.type);
+          console.log('画布尺寸:', settings.canvasWidth, 'x', settings.canvasHeight);
+
         } catch (error) {
           console.error('PIXI应用创建失败:', error);
-          throw new Error('无法初始化PIXI渲染器，请检查浏览器兼容性');
+          // 不要抛出错误，让用户可以正常使用应用
+          console.warn('Live2D加载失败，但不影响其他功能');
+          // 检查是否是因为WebGL不可用
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          if (!gl) {
+            console.warn('您的浏览器不支持WebGL，Live2D需要WebGL才能运行');
+            console.warn('建议使用现代浏览器：Chrome、Firefox、Safari等');
+          }
+          return () => {}; // 返回空清理函数
+        }
+
+        // 如果app创建失败，直接返回
+        if (!app) {
+          return () => {};
         }
 
         appRef.current = app;
