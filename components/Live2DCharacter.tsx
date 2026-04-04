@@ -94,21 +94,22 @@ export default function Live2DCharacter() {
         const PIXI = (window as any).PIXI;
         console.log('PIXI版本:', PIXI.VERSION);
 
-        // 创建PIXI应用 - 简化配置以避免渲染器检测问题
+        // 创建PIXI应用 - 最简配置，避免渲染器检测问题
         let app;
         try {
           // 最简配置，让PIXI自动处理渲染器
           app = new PIXI.Application({
             width: settings.canvasWidth,
             height: settings.canvasHeight,
-            backgroundColor: '#00000000', // 透明背景
+            transparent: true, // 设置透明
           });
           console.log('PIXI渲染器类型:', app.renderer.type);
           console.log('WebGL可用:', (app.renderer as any).webgl);
           console.log('PIXI应用创建成功');
         } catch (error) {
           console.error('PIXI应用创建失败:', error);
-          throw new Error('无法初始化PIXI渲染器，请检查浏览器兼容性');
+          console.warn('Live2D加载失败，但不影响其他功能');
+          return () => {}; // 返回空清理函数
         }
 
         appRef.current = app;
