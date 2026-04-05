@@ -16,8 +16,25 @@
 - 参与社区互动（评论、关注、收藏）
 - 创建和加入班级进行协作学习
 - 自定义网站配色主题
+- 🤖 **AI学习助手**：集成智能AI助手，支持对话记忆和多模型配置
+- 🎭 **Live2D角色**：可定制的虚拟角色，增强学习体验
 
 ## ✨ 主要功能
+
+### 🤖 AI学习助手
+- **智能对话**：基于千问大模型的智能对话系统
+- **对话记忆**：每个用户独立的对话历史，支持多会话管理
+- **个性化配置**：可自定义AI助手名称、性格、回复风格等
+- **多模型支持**：支持千问系列模型，可添加自定义模型
+- **多模态输入**：支持文本对话、屏幕截图、图片上传
+- **LaTeX公式支持**：自动渲染数学公式
+- **实时响应**：流畅的对话体验和状态管理
+
+### 🎭 Live2D角色
+- **动态角色**：集成Live2D虚拟角色展示
+- **自定义设置**：可调整角色显示大小、位置和样式
+- **点击穿透**：支持角色背景透明，不影响页面交互
+- **模型管理**：支持多种Live2D模型切换
 
 ### 📚 题库功能
 - 题目上传：支持文本、图片、PDF/Word 文档上传
@@ -69,6 +86,9 @@
 | date-fns | 4.1.0 | 日期处理 |
 | KaTeX | 0.16.28 | 数学公式渲染 |
 | Mammoth | 1.11.0 | Word 文档解析 |
+| PIXI.js | 7.4.3 | 2D渲染引擎（Live2D） |
+| Live2D Cubism | 4.0 | 动态角色引擎 |
+| 千问 API | - | AI对话服务 |
 
 ### 后端/数据库
 | 技术 | 版本 | 说明 |
@@ -104,9 +124,15 @@ question-bank/
 │   ├── Navbar.tsx      # 导航栏（含主题切换）
 │   ├── Footer.tsx      # 页脚
 │   ├── UserAvatar.tsx  # 用户头像组件
+│   ├── FloatingAIButton.tsx  # AI助手悬浮按钮和对话面板
+│   ├── Live2DCharacter.tsx  # Live2D角色展示
 │   └── ...
 ├── lib/                 # 工具函数
 │   ├── supabase.ts      # Supabase 客户端封装
+│   ├── ai-service.ts   # AI对话服务
+│   ├── ai-parser.ts    # AI响应解析工具
+│   ├── ai-memory-service.ts  # AI对话记忆服务
+│   ├── llm-config-service.ts  # LLM配置管理
 │   ├── theme.ts         # 主题配置系统
 │   ├── upload.ts        # 文件上传处理
 │   └── ...
@@ -144,7 +170,13 @@ pnpm install
 ```env
 NEXT_PUBLIC_SUPABASE_URL=你的_Supabase_Project_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=你的_Supabase_Anon_Key
+QWEN_API_KEY=你的千问API_Key
 ```
+
+**AI助手配置说明**：
+- `QWEN_API_KEY` - 千问API密钥（可选，也可在应用内配置）
+- 用户登录后可在AI助手设置中自行配置API Key
+- 支持千问、自定义等多种模型配置
 
 ### 运行开发服务器
 
@@ -175,6 +207,7 @@ npm start
 2. `notes_schema.sql` - 笔记相关表
 3. `class_system.sql` - 班级系统表
 4. `ultimate_fix.sql` - 完整的 RLS 策略配置（整合所有修复）
+5. `ai_conversation_memory.sql` - AI对话记忆系统表（可选）
 
 ### 核心表说明
 
@@ -193,6 +226,9 @@ npm start
 | `class_members` | 班级成员 |
 | `class_approval_requests` | 班级审核申请 |
 | `notifications` | 消息通知 |
+| `ai_conversations` | AI对话会话 |
+| `ai_messages` | AI对话消息 |
+| `user_ai_settings` | 用户AI配置 |
 
 ## 🎨 主题系统
 
@@ -254,6 +290,20 @@ git commit -m "描述变更"
 
 ### 主题切换不生效
 清除浏览器缓存后刷新页面。
+
+### AI助手无法使用
+- 检查是否已登录
+- 在AI设置中配置API Key（千问API Key或自定义模型）
+- 确保网络连接正常
+
+### 对话历史不显示
+- 执行 `ai_conversation_memory.sql` 脚本创建对话表
+- 检查数据库权限配置
+
+### Live2D角色不显示
+- 检查Live2D设置是否启用显示
+- 确保浏览器支持WebGL
+- 查看控制台是否有错误信息
 
 ## 📄 许可证
 

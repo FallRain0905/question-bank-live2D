@@ -5,27 +5,44 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { question, history, image } = await req.json();
+    const { question, history, image, systemPrompt, llmConfig } = await req.json();
 
     if (!question && !image) {
       return NextResponse.json({ answer: '请输入问题或上传图片' });
     }
 
-    // 获取千问 API Key
-    const apiKey = process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
-    
-    console.log('API Key 长度:', apiKey.length);
-    
+    // 如果没有提供LLM配置，使用默认配置
+    const apiKey = llmConfig?.apiKey || process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+    const apiUrl = llmConfig?.apiUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+    const model = llmConfig?.model || (image ? 'qwen-vl-max' : 'qwen-plus');
+    const temperature = llmConfig?.temperature || 0.7;
+    const maxTokens = llmConfig?.maxTokens || 1000;
+
+    console.log('LLM配置:', { model, temperature, maxTokens, hasApiKey: !!apiKey });
+
     if (!apiKey) {
-      return NextResponse.json({ 
-        answer: 'AI 服务尚未配置，请联系管理员。' 
+      return NextResponse.json({
+        answer: 'AI 服务尚未配置，请联系管理员或配置自定义模型。'
       });
     }
 
     // 构建消息
-    const messages: any[] = history || [];
-    
-    // 如果有图片，使用视觉模型
+    const messages: any[] = [];
+
+    // 添加系统提示词
+    if (systemPrompt) {
+      messages.push({
+        role: 'system',
+        content: systemPrompt
+      });
+    }
+
+    // 添加历史消息
+    if (history && history.length > 0) {
+      messages.push(...history);
+    }
+
+    // 添加当前用户消息
     if (image) {
       messages.push({
         role: 'user',
@@ -49,11 +66,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 选择模型（有图片用视觉模型）
-    const model = image ? 'qwen-vl-max' : 'qwen3.5-flash';
-
-    // 调用千问 API
-    const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    // 调用LLM API
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -61,24 +75,26 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model,
-        messages: [
-          {
-            role: 'system',
-            content: '你是一个友好的学习助手，专门帮助学生理解题目和知识点。回答要简洁明了，适合学生理解。如果涉及数学公式，请使用 LaTeX 格式。'
-          },
-          ...messages
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('千问 API 错误:', errorText);
-      return NextResponse.json({ 
-        answer: 'AI 服务暂时不可用，请稍后再试。' 
-      });
+      console.error('LLM API 错误:', errorText);
+
+      try {
+        const errorData = JSON.parse(errorText);
+        return NextResponse.json({
+          answer: `AI 服务错误: ${errorData.error?.message || errorData.message || '未知错误'}`
+        });
+      } catch {
+        return NextResponse.json({
+          answer: 'AI 服务暂时不可用，请稍后再试。'
+        });
+      }
     }
 
     const data = await response.json();
@@ -88,8 +104,8 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('AI Assistant error:', error);
-    return NextResponse.json({ 
-      answer: '发生错误，请稍后重试。' 
+    return NextResponse.json({
+      answer: '发生错误，请稍后重试。'
     });
   }
 }
