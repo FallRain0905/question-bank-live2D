@@ -217,6 +217,13 @@ export default function Navbar() {
                   >
                     📄 文档题目提取
                   </Link>
+                  <Link
+                    href="/ai-workbench"
+                    className="block px-4 py-2 text-brand-600 hover:bg-brand-100"
+                    onClick={() => setDropdownOpen(null)}
+                  >
+                    🚧 AI工作台
+                  </Link>
                 </div>
               )}
             </div>

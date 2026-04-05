@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ConversationProvider } from '@/contexts/ai-workbench/ConversationContext';
 import { WorkbenchLayout } from '@/components/ai-workbench/WorkbenchLayout';
 import HistorySidebar from '@/components/ai-workbench/HistorySidebar';
