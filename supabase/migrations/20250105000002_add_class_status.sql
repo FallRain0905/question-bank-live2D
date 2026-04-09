@@ -38,7 +38,7 @@ CREATE POLICY "认证用户可以创建审核请求" ON class_approval_requests 
 DROP POLICY IF EXISTS "管理员可以更新审核请求" ON class_approval_requests;
 CREATE POLICY "管理员可以更新审核请求" ON class_approval_requests FOR UPDATE USING (
     auth.uid() IN (
-        SELECT id FROM auth.users WHERE user_metadata->>'is_admin' = 'true'
+        SELECT id FROM auth.users WHERE raw_user_meta_data->>'is_admin' = 'true'
     )
 );
 
