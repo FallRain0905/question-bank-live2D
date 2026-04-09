@@ -235,9 +235,6 @@ export default function ClassesPage() {
           status: 'pending',
         });
 
-      // 注意：触发器会自动将创建者添加为班级成员（status = 'approved'）
-      // 不需要手动插入
-
       setClassName('');
       setClassDesc('');
       setShowCreateModal(false);

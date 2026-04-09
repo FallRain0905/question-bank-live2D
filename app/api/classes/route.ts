@@ -49,7 +49,9 @@ export async function GET(request: NextRequest) {
           description,
           invite_code,
           creator_id,
-          created_at
+          created_at,
+          status,
+          reject_reason
         )
       `)
       .eq('user_id', user.id);
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         creator_id: user.id,
+        status: 'pending',
       })
       .select()
       .single();

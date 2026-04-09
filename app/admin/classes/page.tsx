@@ -87,6 +87,16 @@ export default function AdminClassesPage() {
 
       if (classError) throw classError;
 
+      // 更新班级创建者的成员状态为 approved
+      const { error: memberError } = await supabase
+        .from('class_members')
+        .update({ status: 'approved' })
+        .eq('class_id', selectedRequest.class_id)
+        .eq('user_id', selectedRequest.user_id)
+        .eq('role', 'creator');
+
+      if (memberError) throw memberError;
+
       // 更新 class_approval_requests 表
       const { error: requestError } = await supabase
         .from('class_approval_requests')
@@ -134,6 +144,16 @@ export default function AdminClassesPage() {
         .eq('id', selectedRequest.class_id);
 
       if (classError) throw classError;
+
+      // 更新班级创建者的成员状态为 rejected
+      const { error: memberError } = await supabase
+        .from('class_members')
+        .update({ status: 'rejected' })
+        .eq('class_id', selectedRequest.class_id)
+        .eq('user_id', selectedRequest.user_id)
+        .eq('role', 'creator');
+
+      if (memberError) throw memberError;
 
       // 更新 class_approval_requests 表
       const { error: requestError } = await supabase
