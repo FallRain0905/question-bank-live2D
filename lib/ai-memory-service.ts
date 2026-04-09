@@ -14,6 +14,7 @@ export interface AIConversation {
   updated_at: string;
   is_active: boolean;
   metadata: Record<string, any>;
+  message_count?: number;
 }
 
 export interface AIMessage {

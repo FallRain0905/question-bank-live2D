@@ -359,9 +359,11 @@ export default function AdminSettingsPage() {
                                         onChange={(e) => setQwenModel(e.target.value)}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                     >
-                                        <option value="qwen-turbo">qwen-turbo (快速响应)</option>
-                                        <option value="qwen-plus">qwen-plus (平衡性能)</option>
-                                        <option value="qwen-max">qwen-max (最强模型)</option>
+                                        <option value="qwen3-max">qwen3-max (最强模型)</option>
+                                        <option value="qwen3.6-plus">qwen3.6-plus (推荐)</option>
+                                        <option value="qwen3.5-plus">qwen3.5-plus (平衡性能)</option>
+                                        <option value="qwen3.5-flash">qwen3.5-flash (快速响应)</option>
+                                        <option value="qwen-vl-max">qwen-vl-max (视觉最强)</option>
                                     </select>
                                     <p className="text-gray-500 text-sm mt-1">选择使用的 AI 模型</p>
                                 </div>

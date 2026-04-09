@@ -25,9 +25,12 @@ export interface ChatSession {
 }
 
 const MODEL_OPTIONS = [
-  { id: 'qwen-vl-max-latest', name: '千问-VL-Max', description: '最强图文性能' },
-  { id: 'qwen-vl-plus', name: '千问-VL-Plus', description: '图文对话模型' },
-  { id: 'qwen-plus', name: '千问-Plus', description: '纯文本模型' },
+  { id: 'qwen-vl-max', name: '千问 VL Max', description: '最强视觉性能' },
+  { id: 'qwen-vl-plus', name: '千问 VL Plus', description: '图文对话模型' },
+  { id: 'qwen3-max', name: '千问 Qwen3 Max', description: '最强文本性能' },
+  { id: 'qwen3.6-plus', name: '千问 Qwen3.6 Plus', description: '推荐文本模型' },
+  { id: 'qwen3.5-plus', name: '千问 Qwen3.5 Plus', description: '平衡性能' },
+  { id: 'qwen3.5-flash', name: '千问 Qwen3.5 Flash', description: '快速响应' },
 ];
 
 function generateId(): string {
@@ -40,7 +43,7 @@ export default function AIPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('qwen-vl-max-latest');
+  const [selectedModel, setSelectedModel] = useState('qwen3-max');
   const [showModelSelect, setShowModelSelect] = useState(false);
 
   // 可调节尺寸功能

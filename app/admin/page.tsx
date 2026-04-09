@@ -412,12 +412,20 @@ export default function AdminPage() {
               </h1>
               {/* 系统配置按钮 - 仅超级管理员可见 */}
               {isAdmin && (
-                <Link
-                  href="/admin/settings"
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition flex items-center gap-1"
-                >
-                  ⚙️ 系统配置
-                </Link>
+                <>
+                  <Link
+                    href="/admin/classes"
+                    className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition flex items-center gap-1"
+                  >
+                    🏫 班级审核
+                  </Link>
+                  <Link
+                    href="/admin/settings"
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition flex items-center gap-1"
+                  >
+                    ⚙️ 系统配置
+                  </Link>
+                </>
               )}
             </div>
             <button

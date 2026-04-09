@@ -96,7 +96,6 @@ export default function Live2DCharacter() {
 
         // 创建PIXI应用 - 使用最基础的配置，避免渲染器检测问题
         let app;
-        let view: HTMLCanvasElement;
 
         try {
           // 检查WebGL支持
@@ -120,7 +119,6 @@ export default function Live2DCharacter() {
           }
 
           appRef.current = app;
-          view = app.view as HTMLCanvasElement;
 
           console.log('PIXI版本:', PIXI.VERSION);
           console.log('渲染器类型:', app.renderer.type);

@@ -11,7 +11,6 @@ import {
   addMessage,
   formatConversationHistory,
   getUserConversations,
-  type AIMessage,
   type AIConversation,
 } from '@/lib/ai-memory-service';
 import {
@@ -25,7 +24,6 @@ import {
   deleteCustomLLM,
   type UserAIProfile,
   type LLMConfig,
-  DEFAULT_USER_AI_PROFILE,
 } from '@/lib/llm-config-service';
 
 interface Message {
@@ -52,7 +50,6 @@ export default function FloatingAIButton() {
   const [userId, setUserId] = useState<string | null>(null);
   const [showConfigAlert, setShowConfigAlert] = useState(false);
   const [databaseAvailable, setDatabaseAvailable] = useState<boolean>(false);
-  const [showDatabaseNotice, setShowDatabaseNotice] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);

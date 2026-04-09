@@ -4,7 +4,9 @@ import { useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { useConversationContext } from '@/contexts/ai-workbench/ConversationContext';
-import { getSelectedLLM, getAvailableLLMs } from '@/lib/llm-config-service';
+import { getSelectedLLM, getAvailableLLMs, saveSelectedLLM, type LLMModel } from '@/lib/llm-config-service';
+import ModelSelector from './ModelSelector';
+import InputArea from './InputArea';
 
 export default function ChatArea() {
   const { messages, loading } = useConversationContext();
@@ -79,30 +81,43 @@ export default function ChatArea() {
     console.log('删除消息:', index);
   };
 
-  const availableModels = getAvailableLLMs('demo_user');
-  const selectedModel = getSelectedLLM('demo_user');
+  const [selectedModel, setSelectedModel] = useState<LLMModel | null>(getSelectedLLM('demo_user'));
+  const userId = 'demo_user'; // 临时用户ID
+
+  // 发送消息处理
+  const handleSendMessage = (content: string, image?: string) => {
+    // TODO: 集成消息发送功能
+    console.log('发送消息:', content, image);
+    const { addMessage } = useConversationContext();
+    if (content) {
+      // 这里需要实际的发送逻辑，暂时打印
+      console.log('消息已发送:', content);
+    }
+  };
 
   return (
     <div className="flex-1 bg-white/80 backdrop-blur-md flex flex-col">
-      {/* 顶部区域 - 模型选择器 */}
+      {/* 顶部区域 - 模型选择器和操作按钮 */}
       <div className="bg-white border-b border-brand-200 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-brand-500">当前对话</span>
-          <div className="relative">
-            <button className="text-sm text-brand-600 hover:text-brand-800 transition-colors flex items-center gap-1">
-              <span className="text-sm">{selectedModel?.name || '千问 Qwen'}</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7m0 01-2.012-2.012l2.012 2.012-2.012L17.657 16.657z" />
-              </svg>
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-brand-500 font-medium">AI模型</span>
+          <ModelSelector
+            userId={userId}
+            onModelChange={(model) => setSelectedModel(model)}
+          />
         </div>
         <div className="flex items-center gap-2">
-          <button className="text-sm text-brand-600 hover:text-brand-800 transition-colors">
-            📄 导出对话
+          <button className="text-sm text-brand-600 hover:text-brand-800 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            导出对话
           </button>
-          <button className="text-sm text-brand-600 hover:text-brand-800 transition-colors">
-            🗑️ 清空对话
+          <button className="text-sm text-brand-600 hover:text-brand-800 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            清空对话
           </button>
         </div>
       </div>
@@ -218,27 +233,10 @@ export default function ChatArea() {
       </div>
 
       {/* 底部输入区域 */}
-      <div className="bg-white border-t border-brand-200 px-4 py-3">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              placeholder="输入问题或学习内容，支持LaTeX公式：$E=mc^2$..."
-              className="w-full px-4 py-2 border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none text-sm"
-              disabled
-            />
-            <button className="px-6 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed transition-colors">
-              发送
-            </button>
-          </div>
-          <button className="flex items-center gap-2 text-brand-500 hover:text-brand-600 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0M20 14m-6-6h.01M6 20h.01" />
-            </svg>
-            上传文件
-          </button>
-        </div>
-      </div>
+      <InputArea
+        onSendMessage={handleSendMessage}
+        loading={loading}
+      />
     </div>
   );
 }

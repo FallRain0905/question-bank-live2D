@@ -15,13 +15,13 @@ export interface ChatMessage {
 
 // API 端点配置
 const API_ENDPOINTS = {
-  qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+  qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
   kimi: 'https://api.moonshot.cn/v1/chat/completions',
 };
 
 // 默认模型配置
 const DEFAULT_MODELS = {
-  qwen: 'qwen-plus',
+  qwen: 'qwen3-max',
   kimi: 'moonshot-v1-8k',
 };
 

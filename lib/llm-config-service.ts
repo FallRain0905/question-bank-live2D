@@ -15,42 +15,106 @@ export interface LLMConfig {
   temperature: number;
   enabled: boolean;
   isDefault: boolean;
+  capabilities?: string[]; // 模型能力标识：'vision', 'code', 'math' 等
 }
 
 // 预定义的LLM配置
 export const PREDEFINED_LLMS: LLMConfig[] = [
   {
-    id: 'qwen-default',
-    name: '千问 Qwen',
+    id: 'qwen3-max',
+    name: '千问 Qwen3 Max (最强)',
     provider: 'qwen',
-    model: 'qwen-plus',
-    maxTokens: 1000,
+    model: 'qwen3-max',
+    maxTokens: 2000,
     temperature: 0.7,
     enabled: true,
     isDefault: true,
-    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
+    capabilities: ['text', 'code'],
   },
   {
-    id: 'qwen-flash',
-    name: '千问 Flash (快速)',
+    id: 'qwen3-6-plus',
+    name: '千问 Qwen3.6 Plus (推荐)',
     provider: 'qwen',
-    model: 'qwen-flash',
-    maxTokens: 1000,
+    model: 'qwen3.6-plus',
+    maxTokens: 2000,
     temperature: 0.7,
     enabled: true,
     isDefault: false,
-    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
+    capabilities: ['text', 'code'],
+  },
+  {
+    id: 'qwen3-5-plus',
+    name: '千问 Qwen3.5 Plus',
+    provider: 'qwen',
+    model: 'qwen3.5-plus',
+    maxTokens: 2000,
+    temperature: 0.7,
+    enabled: true,
+    isDefault: false,
+    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
+    capabilities: ['text', 'code'],
+  },
+  {
+    id: 'qwen3-5-flash',
+    name: '千问 Qwen3.5 Flash (快速)',
+    provider: 'qwen',
+    model: 'qwen3.5-flash',
+    maxTokens: 2000,
+    temperature: 0.7,
+    enabled: true,
+    isDefault: false,
+    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
+    capabilities: ['text'],
   },
   {
     id: 'qwen-vl-max',
-    name: '千问 VL Max (视觉)',
+    name: '千问 VL Max (视觉) - 推荐',
     provider: 'qwen',
     model: 'qwen-vl-max',
-    maxTokens: 1000,
+    maxTokens: 2000,
     temperature: 0.7,
     enabled: true,
     isDefault: false,
-    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
+    capabilities: ['vision', 'text', 'code'],
+  },
+  {
+    id: 'qwen-vl-plus',
+    name: '千问 VL Plus (视觉)',
+    provider: 'qwen',
+    model: 'qwen-vl-plus',
+    maxTokens: 2000,
+    temperature: 0.7,
+    enabled: true,
+    isDefault: false,
+    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses',
+    capabilities: ['vision', 'text'],
+  },
+  {
+    id: 'gpt-4-vision',
+    name: 'GPT-4 Vision',
+    provider: 'openai',
+    model: 'gpt-4-vision-preview',
+    maxTokens: 2000,
+    temperature: 0.7,
+    enabled: true,
+    isDefault: false,
+    apiUrl: 'https://api.openai.com/v1/chat/completions',
+    capabilities: ['vision', 'text', 'code'],
+  },
+  {
+    id: 'claude-3-vision',
+    name: 'Claude 3 Vision',
+    provider: 'anthropic',
+    model: 'claude-3-opus-20240229',
+    maxTokens: 2000,
+    temperature: 0.7,
+    enabled: true,
+    isDefault: false,
+    apiUrl: 'https://api.anthropic.com/v1/messages',
+    capabilities: ['vision', 'text', 'code'],
   },
 ];
 
@@ -76,7 +140,7 @@ export const DEFAULT_USER_AI_PROFILE: Omit<UserAIProfile, 'id' | 'userId' | 'cre
   assistantName: '学习助手',
   assistantPersonality: '友好、耐心、喜欢鼓励学生',
   assistantRole: '你是一个专业的学习助手，专门帮助学生理解和解决问题',
-  selectedLLMId: 'qwen-default',
+  selectedLLMId: 'qwen3-max',
   responseStyle: 'friendly',
   language: 'zh-CN',
   customLLMs: [],
@@ -169,7 +233,7 @@ export function getSelectedLLM(userId: string): LLMConfig | null {
 }
 
 // 添加自定义LLM配置
-export function addCustomLLM(userId: string, llm: Omit<LLLMConfig, 'id' | 'enabled' | 'isDefault'>): UserAIProfile | null {
+export function addCustomLLM(userId: string, llm: Omit<LLMConfig, 'id' | 'enabled' | 'isDefault'>): UserAIProfile | null {
   try {
     const profile = getOrCreateUserAIProfile(userId);
     const newLLM: LLMConfig = {
@@ -215,26 +279,29 @@ export function deleteCustomLLM(userId: string, llmId: string): UserAIProfile | 
   }
 }
 
-// 生成系统提示词
-export function generateSystemPrompt(userId: string): string {
+// 生成系统提示词（使用新的模块化提示词系统）
+export function generateSystemPrompt(userId: string, memoryContext?: string): string {
   const profile = getOrCreateUserAIProfile(userId);
-  const llm = getSelectedLLM(userId);
 
-  let systemPrompt = '';
+  // 导入模块化提示词
+  const { generateCompleteSystemPrompt } = require('./prompts/sys');
+  const { generateCharacterFromUserConfig } = require('./prompts/chara');
 
-  // 基本角色设定
-  systemPrompt += `${profile.assistantRole}\n\n`;
-  systemPrompt += `你的名字叫${profile.assistantName}，性格特点：${profile.assistantPersonality}\n\n`;
+  // 生成角色提示词
+  const characterPrompt = generateCharacterFromUserConfig({
+    assistantName: profile.assistantName,
+    assistantPersonality: profile.assistantPersonality,
+    responseStyle: profile.responseStyle,
+    assistantRole: profile.assistantRole,
+  });
 
-  // 回复风格
-  const styleDescriptions = {
-    formal: '正式、专业、条理清晰',
-    casual: '随意、轻松、像朋友一样',
-    friendly: '友好、热情、鼓励性',
-    professional: '专业、严谨、学术性强',
-  };
-
-  systemPrompt += `回复风格：${styleDescriptions[profile.responseStyle]}\n\n`;
+  // 生成记忆上下文提示词
+  let memoryPrompt = '';
+  if (memoryContext) {
+    memoryPrompt = memoryContext;
+  } else if (profile.customSystemPrompt) {
+    memoryPrompt = `**User Custom Requirements**: ${profile.customSystemPrompt}`;
+  }
 
   // 语言设定
   if (profile.language !== 'auto') {
@@ -242,23 +309,11 @@ export function generateSystemPrompt(userId: string): string {
       'zh-CN': '中文',
       'en-US': '英语',
     };
-    systemPrompt += `请使用${languageNames[profile.language]}进行回复\n\n`;
+    memoryPrompt += `\n\n**Language Preference**: Respond in ${languageNames[profile.language]}`;
   }
 
-  // 自定义系统提示词
-  if (profile.customSystemPrompt && profile.customSystemPrompt.trim()) {
-    systemPrompt += `额外要求：${profile.customSystemPrompt}\n\n`;
-  }
-
-  // 学习助手特定设定
-  systemPrompt += `作为学习助手，请遵循以下原则：\n`;
-  systemPrompt += `1. 鼓励学生思考，引导他们自己找到答案\n`;
-  systemPrompt += `2. 用简单易懂的语言解释复杂的概念\n`;
-  systemPrompt += `3. 如果涉及数学公式，请使用LaTeX格式\n`;
-  systemPrompt += `4. 提供多种解题思路和方法\n`;
-  systemPrompt += `5. 适当使用表情符号让回复更生动\n`;
-
-  return systemPrompt;
+  // 使用新的模块化系统生成完整提示词
+  return generateCompleteSystemPrompt(characterPrompt, memoryPrompt);
 }
 
 // 获取LLM API配置（用于实际调用）
@@ -292,4 +347,28 @@ export function getLLMAPIConfig(userId: string): { apiKey?: string; apiUrl?: str
   }
 
   return config;
+}
+
+// 检查模型是否支持图片识别
+export function supportsVision(llm: LLMConfig | null): boolean {
+  if (!llm) return false;
+  return llm.capabilities?.includes('vision') || false;
+}
+
+// 获取第一个支持视觉的模型
+export function getVisionModel(userId: string): LLMConfig | null {
+  const availableLLMs = getAvailableLLMs(userId);
+  return availableLLMs.find(llm => supportsVision(llm)) || null;
+}
+
+// 切换到支持视觉的模型
+export function switchToVisionModel(userId: string): UserAIProfile | null {
+  const visionModel = getVisionModel(userId);
+  if (!visionModel) {
+    return null;
+  }
+
+  return updateUserAIProfile(userId, {
+    selectedLLMId: visionModel.id
+  });
 }

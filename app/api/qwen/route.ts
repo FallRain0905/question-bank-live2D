@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const DASHSCOPE_API_KEY = 'sk-7abb0f55e21e4a7390c74c3763c604cb';
 
 // 千问API兼容模式endpoint
-const API_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+const API_ENDPOINT = 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses';
 
 export async function POST(req: NextRequest) {
   console.log('=== 千问API 请求开始 ===');
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('请求体:', JSON.stringify(body));
 
-    const { messages, model = 'qwen-plus', temperature = 0.7 } = body;
+    const { messages, model = 'qwen3-max', temperature = 0.7 } = body;
 
     if (!messages || !Array.isArray(messages)) {
       console.error('❌ 消息格式无效');
@@ -106,9 +106,20 @@ export async function POST(req: NextRequest) {
 
     console.log('解析后的数据:', JSON.stringify(responseData));
 
-    // 千问API返回格式: { choices: [{ message: { content: string, image?: string } }]
-    const assistantContent = responseData.choices?.[0]?.message?.content || '抱歉，我无法回答这个问题。';
-    const assistantImage = responseData.choices?.[0]?.message?.image;
+    // 兼容多种API响应格式
+    let assistantContent = '抱歉，我无法回答这个问题。';
+    let assistantImage = undefined;
+
+    // OpenAI兼容格式 (chat/completions)
+    if (responseData.choices?.[0]?.message?.content) {
+      assistantContent = responseData.choices[0].message.content;
+      assistantImage = responseData.choices[0].message.image;
+    }
+    // OpenAI Responses API格式 (responses)
+    else if (responseData.output?.choices?.[0]?.message?.content?.[0]?.text) {
+      assistantContent = responseData.output.choices[0].message.content[0].text;
+      assistantImage = responseData.output.choices[0].message.image;
+    }
 
     console.log('助手内容:', assistantContent?.substring(0, 100));
     console.log('是否有图片返回:', assistantImage ? '是' : '否');

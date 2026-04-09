@@ -13,12 +13,23 @@ export async function POST(req: NextRequest) {
 
     // 如果没有提供LLM配置，使用默认配置
     const apiKey = llmConfig?.apiKey || process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
-    const apiUrl = llmConfig?.apiUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-    const model = llmConfig?.model || (image ? 'qwen-vl-max' : 'qwen-plus');
+    const apiUrl = llmConfig?.apiUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1/responses';
+    const model = llmConfig?.model || (image ? 'qwen-vl-max' : 'qwen3-max');
     const temperature = llmConfig?.temperature || 0.7;
-    const maxTokens = llmConfig?.maxTokens || 1000;
+    const maxTokens = llmConfig?.maxTokens || 2000;
 
-    console.log('LLM配置:', { model, temperature, maxTokens, hasApiKey: !!apiKey });
+    console.log('LLM配置详情:', {
+      model,
+      temperature,
+      maxTokens,
+      hasApiKey: !!apiKey,
+      apiUrl,
+      llmConfig,
+      envKeys: {
+        QWEN_API_KEY: !!process.env.QWEN_API_KEY,
+        DASHSCOPE_API_KEY: !!process.env.DASHSCOPE_API_KEY
+      }
+    });
 
     if (!apiKey) {
       return NextResponse.json({
@@ -98,7 +109,22 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content || '抱歉，我暂时无法回答这个问题。';
+
+    // 兼容多种API响应格式
+    let answer = '抱歉，我暂时无法回答这个问题。';
+
+    // OpenAI兼容格式 (chat/completions)
+    if (data.choices?.[0]?.message?.content) {
+      answer = data.choices[0].message.content;
+    }
+    // OpenAI Responses API格式 (responses)
+    else if (data.output?.choices?.[0]?.message?.content?.[0]?.text) {
+      answer = data.output.choices[0].message.content[0].text;
+    }
+    // 备用格式
+    else if (data.content || data.text || data.output) {
+      answer = data.content || data.text || JSON.stringify(data.output);
+    }
 
     return NextResponse.json({ answer });
 

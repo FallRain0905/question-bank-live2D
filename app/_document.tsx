@@ -1,7 +1,6 @@
-import type { Metadata } from 'next';
 import { Html, Head, Main, NextScript } from 'next/document';
 
-export default function Document({ children }: { children: React.ReactNode }) {
+export default function Document() {
   return (
     <Html lang="zh-CN">
       <Head>
@@ -14,11 +13,11 @@ export default function Document({ children }: { children: React.ReactNode }) {
         <script
           src="/live2d/runtime/cubism4.min.js"
           async
-          strategy="beforeInteractive"
         />
       </Head>
       <body className="bg-brand-50 text-brand-900">
-        <Main>{children}</Main>
+        <Main />
+        <NextScript />
       </body>
     </Html>
   );
