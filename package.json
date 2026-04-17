@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS=--max-old-space-size=4096 next dev",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
-    "build:low": "NODE_OPTIONS=--max-old-space-size=2048 next build",
+    "dev": "next dev",
+    "build": "next build",
+    "build:low": "next build",
     "start": "next start",
     "lint": "next lint",
     "clean": "rimraf .next node_modules/.cache",

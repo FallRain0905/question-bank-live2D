@@ -97,9 +97,9 @@ DECLARE
     final_username TEXT;
     counter INTEGER := 1;
 BEGIN
-    -- 尝试从 user_metadata 获取用户名
+    -- 尝试从 raw_user_meta_data 获取用户名
     base_username := COALESCE(
-        NULLIF(NEW.user_metadata->>'username', ''),
+        NULLIF(NEW.raw_user_meta_data->>'username', ''),
         SPLIT_PART(NEW.email, '@', 1)
     );
 
@@ -116,8 +116,8 @@ BEGIN
         NEW.id,
         final_username,
         COALESCE(
-            NULLIF(NEW.user_metadata->>'display_name', ''),
-            NULLIF(NEW.user_metadata->>'username', ''),
+            NULLIF(NEW.raw_user_meta_data->>'display_name', ''),
+            NULLIF(NEW.raw_user_meta_data->>'username', ''),
             final_username
         )
     );

@@ -3,6 +3,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { getLive2DSettings, onLive2DSettingsUpdated, type Live2DSettings } from '@/lib/live2d-settings';
 
+// 格式化错误消息，处理各种类型的错误对象
+function formatError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (error instanceof Event) {
+    return `Event: ${error.type}`;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as any).message);
+  }
+  if (error && typeof error === 'object' && 'toString' in error) {
+    try {
+      return String((error as any).toString());
+    } catch {
+      return '[Object]';
+    }
+  }
+  return String(error);
+}
+
 export default function Live2DCharacter() {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<any>(null);
@@ -29,7 +50,7 @@ export default function Live2DCharacter() {
       try {
         appRef.current.destroy(true, { children: true });
       } catch (error) {
-        console.error('清理Live2D失败:', error);
+        console.error('清理Live2D失败:', formatError(error));
       }
       appRef.current = null;
     }
@@ -55,14 +76,23 @@ export default function Live2DCharacter() {
       return new Promise((resolve, reject) => {
         // 检查是否已加载
         if (document.querySelector(`script[src="${src}"]`)) {
+          console.log(`脚本已加载: ${src}`);
           resolve();
           return;
         }
 
         const script = document.createElement('script');
-        script.src = src;
-        script.onload = () => resolve();
-        script.onerror = reject;
+        // 添加时间戳避免缓存问题
+        const timestamp = new Date().getTime();
+        script.src = `${src}?t=${timestamp}`;
+        script.onload = () => {
+          console.log(`脚本加载成功: ${src}`);
+          resolve();
+        };
+        script.onerror = (event) => {
+          console.error(`脚本加载失败: ${src}`, event);
+          reject(new Error(`Failed to load script: ${src}`));
+        };
         document.head.appendChild(script);
       });
     };
@@ -125,7 +155,7 @@ export default function Live2DCharacter() {
           console.log('画布尺寸:', settings.canvasWidth, 'x', settings.canvasHeight);
 
         } catch (error) {
-          console.error('PIXI应用创建失败:', error);
+          console.error('PIXI应用创建失败:', formatError(error));
           // 不要抛出错误，让用户可以正常使用应用
           console.warn('Live2D加载失败，但不影响其他功能');
           // 检查是否是因为WebGL不可用
@@ -162,10 +192,58 @@ export default function Live2DCharacter() {
           }
         }
 
-        // 加载neko模型
-        const model = await PIXI.live2d.Live2DModel.from('/live2d/model/neko/ziraitikuwa.model3.json', {
-          autoFocus: false,
-        });
+        // 加载neko模型 - 添加时间戳避免缓存问题
+        const modelUrl = `/live2d/model/neko/ziraitikuwa.model3.json?t=${new Date().getTime()}`;
+        console.log('开始加载Live2D模型:', modelUrl);
+        console.log('当前浏览器URL:', window.location.href);
+
+        // 添加详细的加载监控
+        let loadAttempt = 0;
+        const maxAttempts = 3;
+
+        const loadModelWithRetry = async (url: string): Promise<any> => {
+          try {
+            loadAttempt++;
+            console.log(`尝试加载模型 (${loadAttempt}/${maxAttempts}):`, url);
+
+            // 使用fetch先测试文件可访问性
+            const testResponse = await fetch(url, {
+              method: 'HEAD',
+              cache: 'no-store'
+            });
+
+            console.log('文件测试响应:', {
+              status: testResponse.status,
+              type: testResponse.headers.get('Content-Type'),
+              url: testResponse.url
+            });
+
+            if (!testResponse.ok) {
+              throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
+            }
+
+            const model = await PIXI.live2d.Live2DModel.from(url, {
+              autoFocus: false,
+            });
+
+            console.log('Live2D模型加载成功');
+            return model;
+
+          } catch (error) {
+            console.error(`模型加载尝试 ${loadAttempt} 失败:`, formatError(error));
+
+            if (loadAttempt < maxAttempts) {
+              // 等待后重试
+              await new Promise(resolve => setTimeout(resolve, 1000 * loadAttempt));
+              return loadModelWithRetry(url);
+            } else {
+              // 最终失败，抛出错误
+              throw new Error(`模型加载失败（已尝试${maxAttempts}次）: ${formatError(error)}`);
+            }
+          }
+        };
+
+        const model = await loadModelWithRetry(modelUrl);
 
         modelRef.current = model;
 
@@ -339,7 +417,20 @@ export default function Live2DCharacter() {
           };
         }
       } catch (error) {
-        console.error('Live2D加载失败:', error);
+        const errorMessage = formatError(error);
+        console.error('Live2D加载失败:', errorMessage);
+        console.warn('Live2D功能暂时不可用，但应用其他功能正常');
+
+        // 显示用户友好的错误信息
+        if (typeof window !== 'undefined') {
+          console.warn('Live2D加载失败可能原因:');
+          console.warn('1. 浏览器网络连接问题');
+          console.warn('2. 静态文件访问权限问题');
+          console.warn('3. Next.js服务器配置问题');
+          console.warn('4. 浏览器缓存或CORS问题');
+          console.warn('建议：尝试清除浏览器缓存或使用无痕模式');
+        }
+
         return () => {
           cleanupLive2D();
         };

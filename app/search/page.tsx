@@ -431,7 +431,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative z-10">
         {loading ? (
           <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (

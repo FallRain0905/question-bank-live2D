@@ -1,41 +1,57 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-      },
-    ],
-  },
-  webpack: (config, { isServer }) => {
-    // Optimize webpack cache to reduce memory usage
-    config.cache = {
-      type: 'filesystem',
-      compression: 'gzip',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    };
+	const nextConfig = {
+	  images: {
+	    remotePatterns: [
+	      {
+	        protocol: 'https',
+	        hostname: '**.supabase.co',
+	      },
+	    ],
+	  },
 
-    // Reduce parallelism to prevent memory issues on servers
-    config.parallelism = 1;
+	  // 配置Live2D模型文件的MIME类型
+	  async headers() {
+	    return [
+	      {
+	        source: '/live2d/model/:path*',
+	        headers: [
+	          {
+	            key: 'Content-Type',
+	            value: 'application/json',
+	          },
+	        ],
+	      },
+	    ];
+	  },
 
-    // Optimize for lower memory usage
-    config.optimization = {
-      ...config.optimization,
-      minimize: !isServer, // Only minimize on client side
-      splitChunks: {
-        chunks: 'all',
-        maxSize: 244 * 1024, // 244KB chunks
-      },
-    };
+	  webpack: (config, { isServer }) => {
+	    // Optimize webpack cache to reduce memory usage
+	    config.cache = {
+	      type: 'filesystem',
+	      compression: 'gzip',
+	      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+	    };
 
-    // Reduce memory pressure during build
-    config.infrastructureLogging = {
-      level: 'error', // Only log errors
-    };
+	    // Reduce parallelism to prevent memory issues on servers
+	    config.parallelism = 1;
 
-    return config;
-  },
-};
+	    // Optimize for lower memory usage
+	    config.optimization = {
+	      ...config.optimization,
+	      minimize: !isServer, // Only minimize on client side
+	      splitChunks: {
+	        chunks: 'all',
+	        maxSize: 244 * 1024, // 244KB chunks
+	      },
+	    };
 
-export default nextConfig;
+	    // Reduce memory pressure during build
+	    config.infrastructureLogging = {
+	      level: 'error', // Only log errors
+	    };
+
+	    return config;
+	  },
+	};
+
+	export default nextConfig;

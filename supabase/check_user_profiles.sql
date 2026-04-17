@@ -78,12 +78,12 @@ BEGIN
     VALUES (
         NEW.id,
         COALESCE(
-            NEW.user_metadata->>'username',
+            NEW.raw_user_meta_data->>'username',
             SPLIT_PART(NEW.email, '@', 1)
         ),
         COALESCE(
-            NEW.user_metadata->>'display_name',
-            NEW.user_metadata->>'username',
+            NEW.raw_user_meta_data->>'display_name',
+            NEW.raw_user_meta_data->>'username',
             SPLIT_PART(NEW.email, '@', 1)
         )
     );

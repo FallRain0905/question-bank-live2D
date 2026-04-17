@@ -397,7 +397,7 @@ export default function NotesPage() {
       </div>
 
       {/* 笔记列表 */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-6 relative z-10">
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
